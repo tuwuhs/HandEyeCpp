@@ -54,7 +54,9 @@ public:
                                                 boost::none) const override
     {
         PinholeCamera<Cal3_S2> camera(pose, *K_);
-        return camera.project(P_, H, boost::none, boost::none) - p_;
+        const auto error = camera.project(P_, H, boost::none, boost::none) - p_;
+        // std::cout << error << std::endl;
+        return error;
     }
 };
 
@@ -119,7 +121,7 @@ int main(int argc, char *argv[])
     for (int row = 0; row < rows; row++) {
         for (int col = 0; col < cols; col++) {
             objectPoints.push_back(dimension * Point3(
-                0.4 * (row - rows + 1),
+                0.5 * (row - rows + 1),
                 0.5 * (col - cols + 1),
                 0.0
             ));
@@ -167,22 +169,13 @@ int main(int argc, char *argv[])
                 -1.0, 0.0, 0.0,
                 0.0, 1.0, 0.0,
                 0.0, 0.0, -1.0), 
-            Point3(0.0, 0.0, 0.1)
+            Point3(-0.1, -0.1, 0.1)
         ));
         
-        auto params = LevenbergMarquardtParams();
-        // params.maxIterations = 500;
-        // params.absoluteErrorTol = 0.0;
-        // params.relativeErrorTol = 1e-6;
-        // params.lambdaUpperBound = 1e32;
-        // params.lambdaLowerBound = 1e-16;
-        // params.lambdaInitial = 1e-4;
-        // params.lambdaFactor = 2.0;
-        // params.minModelFidelity = 1e-3;
-        // params.diagonalDamping = true;
-        // params.useFixedLambdaFactor = false;
-        Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+        Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
         result.print("Result: ");
+
+        // break;
     }
 
     return 0;
