@@ -102,14 +102,88 @@ int main(int argc, char *argv[])
     auto hTe = std::get<2>(simulatedPose);
     auto wTo = std::get<3>(simulatedPose);
 
+    // for (auto wTh: wThList) {
+    //     std::cout << wTh << std::endl;
+    // }
+    // for (auto eTo: eToList) {
+    //     std::cout << eTo << std::endl;
+    // }
+    // std::cout << wTo << std::endl;
+    // std::cout << hTe << std::endl;
+
+    // Create target object
+    const int rows = 7;
+    const int cols = 5;
+    const double dimension = 0.1;
+    std::vector<Point3> objectPoints;
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            objectPoints.push_back(dimension * Point3(
+                0.4 * (row - rows + 1),
+                0.5 * (col - cols + 1),
+                0.0
+            ));
+        }
+    }
+
+    // Project points
+    const auto cameraCalibration = boost::make_shared<Cal3_S2>(Cal3_S2(300.0, 300.0, 0.0, 320.0, 240.0));
+    std::vector<std::vector<Point2>> imagePointsList;
     for (auto wTh: wThList) {
-        std::cout << wTh << std::endl;
+        const auto oTe = wTo.inverse() * wTh * hTe;
+        const auto cam = PinholeCamera<Cal3_S2>(oTe, *cameraCalibration);
+        std::vector<Point2> imagePoints;
+        for (auto objectPoint: objectPoints) {
+            imagePoints.push_back(cam.project(objectPoint));
+        }
+        imagePointsList.push_back(imagePoints);
     }
-    for (auto eTo: eToList) {
-        std::cout << eTo << std::endl;
+
+    // for (auto imagePoints: imagePointsList) {
+    //     for (auto imagePoint: imagePoints) {
+    //         std::cout << "(" << imagePoint.x() << ", " << imagePoint.y() << ")  ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // Try camera resectioning
+    for (int i = 0; i < wThList.size(); i++) {
+        const auto imagePoints = imagePointsList[i];
+        const auto wTh = wThList[i];
+        const auto oTe = wTo.inverse() * wTh * hTe;
+        cout << "Actual: " << oTe << std::endl;
+
+        NonlinearFactorGraph graph;
+        auto measurementNoise = Diagonal::Sigmas(Point2(1.0, 1.0));
+
+        for (int j = 0; j < imagePoints.size(); j++) {
+            graph.emplace_shared<ResectioningFactor>(
+                measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
+        }
+
+        Values initial;
+        initial.insert(X(1), Pose3(
+            Rot3(
+                -1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, -1.0), 
+            Point3(0.0, 0.0, 0.1)
+        ));
+        
+        auto params = LevenbergMarquardtParams();
+        // params.maxIterations = 500;
+        // params.absoluteErrorTol = 0.0;
+        // params.relativeErrorTol = 1e-6;
+        // params.lambdaUpperBound = 1e32;
+        // params.lambdaLowerBound = 1e-16;
+        // params.lambdaInitial = 1e-4;
+        // params.lambdaFactor = 2.0;
+        // params.minModelFidelity = 1e-3;
+        // params.diagonalDamping = true;
+        // params.useFixedLambdaFactor = false;
+        Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+        result.print("Result: ");
     }
-    std::cout << wTo << std::endl;
-    std::cout << hTe << std::endl;
 
     return 0;
 }
