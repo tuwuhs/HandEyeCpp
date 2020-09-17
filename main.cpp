@@ -96,12 +96,18 @@ int main(int argc, char *argv[])
     // Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
     // result.print("Final result:\n");
 
-    std::vector<gtsam::Pose3> wThList;
-    std::vector<gtsam::Pose3> eToList;
-    gtsam::Pose3 hTe;
-    gtsam::Pose3 wTo;
-    simulatePoseKoide(wThList, eToList, hTe, wTo);
+    auto simulatedPose = simulatePoseKoide();
+    auto wThList = std::get<0>(simulatedPose);
+    auto eToList = std::get<1>(simulatedPose);
+    auto hTe = std::get<2>(simulatedPose);
+    auto wTo = std::get<3>(simulatedPose);
 
+    for (auto wTh: wThList) {
+        std::cout << wTh << std::endl;
+    }
+    for (auto eTo: eToList) {
+        std::cout << eTo << std::endl;
+    }
     std::cout << wTo << std::endl;
     std::cout << hTe << std::endl;
 

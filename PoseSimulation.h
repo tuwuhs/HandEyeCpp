@@ -5,9 +5,10 @@
 
 #include <vector>
 
-void simulatePoseKoide(
-    std::vector<gtsam::Pose3>& wThList,
-    std::vector<gtsam::Pose3>& eToList,
-    gtsam::Pose3& hTe,
-    gtsam::Pose3& wTo);
+std::tuple<
+    std::vector<gtsam::Pose3>,
+    std::vector<gtsam::Pose3>,
+    gtsam::Pose3,
+    gtsam::Pose3
+> simulatePoseKoide();
 

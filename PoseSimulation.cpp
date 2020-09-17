@@ -6,11 +6,12 @@
 #include <random>
 #include <vector>
 
-void simulatePoseKoide(
-    std::vector<gtsam::Pose3>& wThList,
-    std::vector<gtsam::Pose3>& eToList,
-    gtsam::Pose3& hTe,
-    gtsam::Pose3& wTo)
+std::tuple<
+    std::vector<gtsam::Pose3>,
+    std::vector<gtsam::Pose3>,
+    gtsam::Pose3,
+    gtsam::Pose3
+> simulatePoseKoide()
 {
     double xRange = 1.0;
     double yRange = 1.0;
@@ -27,7 +28,7 @@ void simulatePoseKoide(
     double handToEyeTrans = 0.3;
     double handToEyeRotDeg = 90.0;
 
-    wTo = gtsam::Pose3(gtsam::Rot3(), gtsam::Point3(1.0, 0.0, 0.0));
+    const auto wTo = gtsam::Pose3(gtsam::Rot3(), gtsam::Point3(1.0, 0.0, 0.0));
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -40,8 +41,10 @@ void simulatePoseKoide(
         rotDistribution(gen)
     ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)));
 
-    hTe = eTh.inverse();
+    const auto hTe = eTh.inverse();
 
+    std::vector<gtsam::Pose3> wThList;
+    std::vector<gtsam::Pose3> eToList;
     for (double z = 0.0; z <= zRange; z += 1.0) {
         for (double y = -yRange; y <= yRange; y += 1.0) {
             for (double x = -xRange; x <= xRange; x += 1.0) {
@@ -65,9 +68,11 @@ void simulatePoseKoide(
                 const auto eTo = wTe.inverse() * wTo;
                 eToList.push_back(eTo);
 
-                std::cout << wTh << std::endl;
-                std::cout << eTo << std::endl;
+                // std::cout << wTh << std::endl;
+                // std::cout << eTo << std::endl;
             }
         }
     }
+
+    return std::tie(wThList, eToList, hTe, wTo);
 }
