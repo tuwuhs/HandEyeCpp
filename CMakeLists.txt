@@ -20,7 +20,7 @@ find_package(GTSAM REQUIRED)
 
 
 ##############################################################################
-add_executable(HelloGTSAM main.cpp)
+add_executable(HelloGTSAM main.cpp PoseSimulation.cpp)
 
 target_link_libraries(HelloGTSAM PUBLIC gtsam)
 

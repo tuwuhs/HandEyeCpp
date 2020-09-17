@@ -22,6 +22,10 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <boost/make_shared.hpp>
 
+#include <vector>
+
+#include "PoseSimulation.h"
+
 using namespace gtsam;
 using namespace gtsam::noiseModel;
 using symbol_shorthand::X;
@@ -64,33 +68,42 @@ public:
  *******************************************************************************/
 int main(int argc, char *argv[])
 {
-    /* read camera intrinsic parameters */
-    Cal3_S2::shared_ptr calib(new Cal3_S2(1, 1, 0, 50, 50));
+    // /* read camera intrinsic parameters */
+    // Cal3_S2::shared_ptr calib(new Cal3_S2(1, 1, 0, 50, 50));
 
-    /* 1. create graph */
-    NonlinearFactorGraph graph;
+    // /* 1. create graph */
+    // NonlinearFactorGraph graph;
 
-    /* 2. add factors to the graph */
-    // add measurement factors
-    SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
-    boost::shared_ptr<ResectioningFactor> factor;
-    graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-                                             Point2(55, 45), Point3(10, 10, 0));
-    graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-                                             Point2(45, 45), Point3(-10, 10, 0));
-    graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-                                             Point2(45, 55), Point3(-10, -10, 0));
-    graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-                                             Point2(55, 55), Point3(10, -10, 0));
+    // /* 2. add factors to the graph */
+    // // add measurement factors
+    // SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
+    // boost::shared_ptr<ResectioningFactor> factor;
+    // graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+    //                                          Point2(55, 45), Point3(10, 10, 0));
+    // graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+    //                                          Point2(45, 45), Point3(-10, 10, 0));
+    // graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+    //                                          Point2(45, 55), Point3(-10, -10, 0));
+    // graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+    //                                          Point2(55, 55), Point3(10, -10, 0));
 
-    /* 3. Create an initial estimate for the camera pose */
-    Values initial;
-    initial.insert(X(1),
-                   Pose3(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(0, 0, 0.9)));
+    // /* 3. Create an initial estimate for the camera pose */
+    // Values initial;
+    // initial.insert(X(1),
+    //                Pose3(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(0, 0, 0.9)));
 
-    /* 4. Optimize the graph using Levenberg-Marquardt*/
-    Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
-    result.print("Final result:\n");
+    // /* 4. Optimize the graph using Levenberg-Marquardt*/
+    // Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+    // result.print("Final result:\n");
+
+    std::vector<gtsam::Pose3> wThList;
+    std::vector<gtsam::Pose3> eToList;
+    gtsam::Pose3 hTe;
+    gtsam::Pose3 wTo;
+    simulatePoseKoide(wThList, eToList, hTe, wTo);
+
+    std::cout << wTo << std::endl;
+    std::cout << hTe << std::endl;
 
     return 0;
 }
