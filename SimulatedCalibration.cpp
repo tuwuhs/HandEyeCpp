@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         cout << "Actual: " << oTe << std::endl;
 
         NonlinearFactorGraph graph;
-        auto measurementNoise = Diagonal::Sigmas(Point2(1.0, 1.0));
+        auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
 
         for (int j = 0; j < imagePoints.size(); j++) {
             graph.emplace_shared<ResectioningFactor>(
