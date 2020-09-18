@@ -12,3 +12,8 @@ std::tuple<
     gtsam::Pose3
 > simulatePoseKoide();
 
+std::vector<gtsam::Pose3> applyNoise(
+    std::vector<gtsam::Pose3> poses, double stdevTrans, double stdevRotDeg);
+
+std::vector<gtsam::Rot3> applyNoise(
+    std::vector<gtsam::Rot3> poses, double stdevRotDeg);

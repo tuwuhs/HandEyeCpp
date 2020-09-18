@@ -37,8 +37,7 @@ std::tuple<
     std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
 
     const auto eTh = gtsam::Pose3(gtsam::Rot3::AxisAngle(
-        gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)),
-        rotDistribution(gen)
+        gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)
     ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)));
 
     const auto hTe = eTh.inverse();
@@ -75,4 +74,44 @@ std::tuple<
     }
 
     return std::tie(wThList, eToList, hTe, wTo);
+}
+
+std::vector<gtsam::Pose3> applyNoise(
+    std::vector<gtsam::Pose3> poses, double stdevTrans, double stdevRotDeg)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> rotDistribution(0.0, stdevRotDeg * M_PI / 180.0);
+    std::normal_distribution<double> transDistribution(0.0, stdevTrans);
+    std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
+
+    std::vector<gtsam::Pose3> result;
+    for (auto pose: poses) {
+        auto noise = gtsam::Pose3(gtsam::Rot3::AxisAngle(
+            gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)
+        ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)));
+
+        result.push_back(noise * pose);
+    }
+
+    return result;
+}
+
+std::vector<gtsam::Rot3> applyNoise(
+    std::vector<gtsam::Rot3> poses, double stdevRotDeg)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> rotDistribution(0.0, stdevRotDeg * M_PI / 180.0);
+    std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
+
+    std::vector<gtsam::Rot3> result;
+    for (auto pose: poses) {
+        auto noise = gtsam::Rot3::AxisAngle(
+            gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen));
+
+        result.push_back(noise * pose);
+    }
+
+    return result;
 }

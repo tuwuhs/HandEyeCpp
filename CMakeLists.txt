@@ -20,9 +20,11 @@ find_package(GTSAM REQUIRED)
 
 
 ##############################################################################
-add_executable(HelloGTSAM main.cpp PoseSimulation.cpp)
+add_executable(SimulatedCalibration SimulatedCalibration.cpp PoseSimulation.cpp)
+target_link_libraries(SimulatedCalibration PUBLIC gtsam)
 
-target_link_libraries(HelloGTSAM PUBLIC gtsam)
+add_executable(PoseAveraging PoseAveraging.cpp PoseSimulation.cpp)
+target_link_libraries(PoseAveraging PUBLIC gtsam)
 
 
 ##############################################################################
