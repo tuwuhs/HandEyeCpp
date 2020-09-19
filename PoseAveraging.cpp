@@ -12,7 +12,8 @@ using namespace gtsam;
 using namespace gtsam::noiseModel;
 using symbol_shorthand::X;
 
-int main() {
+int main() 
+{
     NonlinearFactorGraph graph;
 
     auto noise = nullptr; //Diagonal::Sigmas(Vector3(1, 1, 1));
@@ -23,14 +24,11 @@ int main() {
     }
 
     auto poses = applyNoise(cleanPoses, 1);
-
     for (auto pose: poses) {
        graph.emplace_shared<PriorFactor<Rot3>>(X(1), pose, noise); 
     }
 
     // graph.emplace_shared<PriorFactor<Rot3>>(X(1), Rot3::Rodrigues(1.0, 0.0, 0.0), noise);
-    // graph.emplace_shared<PriorFactor<Rot3>>(X(1), Rot3::Rodrigues(0.9, 0.1, 0.0), noise);
-    // graph.emplace_shared<PriorFactor<Rot3>>(X(1), Rot3::Rodrigues(1.1, -0.1, 0.0), noise);
 
     Values initial;
     initial.insert(X(1), Rot3::Rodrigues(0.0, 0.1, 0.1));

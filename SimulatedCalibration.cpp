@@ -1,9 +1,13 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <boost/make_shared.hpp>
+#include <boost/optional/optional_io.hpp>
 
 #include <vector>
 
@@ -37,9 +41,13 @@ public:
     Vector evaluateError(const Pose3 &pose, 
                          boost::optional<Matrix &> H = boost::none) const override
     {
-        PinholeCamera<Cal3_S2> camera(pose, *K_);
+        auto adj = -pose.AdjointMap();
+        // std::cout << adj << std::endl << std::flush;
+        PinholePose<Cal3_S2> camera(pose.inverse(), K_);
         const auto error = camera.project(P_, H, boost::none, boost::none) - p_;
-        // std::cout << error << std::endl;
+        if (H)
+            *H = *H * adj;
+        // std::cout << error << std::endl << std::flush;
         return error;
     }
 };
@@ -81,7 +89,7 @@ int main(int argc, char *argv[])
     std::vector<std::vector<Point2>> imagePointsList;
     for (auto wTh: wThList) {
         const auto oTe = wTo.inverse() * wTh * hTe;
-        const auto cam = PinholeCamera<Cal3_S2>(oTe, *cameraCalibration);
+        const auto cam = PinholePose<Cal3_S2>(oTe, cameraCalibration);
         std::vector<Point2> imagePoints;
         for (auto objectPoint: objectPoints) {
             imagePoints.push_back(cam.project(objectPoint));
@@ -101,7 +109,7 @@ int main(int argc, char *argv[])
         const auto imagePoints = imagePointsList[i];
         const auto wTh = wThList[i];
         const auto oTe = wTo.inverse() * wTh * hTe;
-        cout << "Actual: " << oTe << std::endl;
+        cout << "Actual: " << oTe.inverse() << std::endl;
 
         NonlinearFactorGraph graph;
         auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
@@ -120,10 +128,15 @@ int main(int argc, char *argv[])
             Point3(-0.1, -0.1, 0.1)
         ));
         
-        Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+        LevenbergMarquardtParams params;
+        // params.maxIterations = 1000;
+        // params.absoluteErrorTol = 0;
+        // params.relativeErrorTol = 1e-6;
+        Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+        // Values result = NonlinearConjugateGradientOptimizer(graph, initial).optimize();
         result.print("Result: ");
 
-        // break;
+        break;
     }
 
     return 0;
