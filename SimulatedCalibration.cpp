@@ -41,12 +41,26 @@ public:
     Vector evaluateError(const Pose3 &pose, 
                          boost::optional<Matrix &> H = boost::none) const override
     {
-        auto adj = -pose.AdjointMap();
+        // auto adj = -pose.AdjointMap();
         // std::cout << adj << std::endl << std::flush;
-        PinholePose<Cal3_S2> camera(pose.inverse(), K_);
-        const auto error = camera.project(P_, H, boost::none, boost::none) - p_;
-        if (H)
-            *H = *H * adj;
+        // std::cout << H << std::endl << std::flush;
+        // if (H) {
+        //     // *H = Matrix::Identity(traits<Pose3>::GetDimension(pose), traits<Pose3>::GetDimension(pose));
+        //     *H = -pose.AdjointMap(); // * *H;
+        // }
+        // std::cout << H << std::endl << std::endl << std::flush;
+
+        Matrix6 Dinverse;
+        PinholePose<Cal3_S2> camera(pose.inverse(Dinverse), K_);
+
+        Matrix26 Dproject;
+        const auto error = camera.project(P_, Dproject, boost::none, boost::none) - p_;
+        // std::cout << H << std::endl << std::endl << std::flush;
+
+        if (H) {
+            *H = Dproject * Dinverse;
+        }
+        
         // std::cout << error << std::endl << std::flush;
         return error;
     }
@@ -109,6 +123,7 @@ int main(int argc, char *argv[])
         const auto imagePoints = imagePointsList[i];
         const auto wTh = wThList[i];
         const auto oTe = wTo.inverse() * wTh * hTe;
+        // cout << "Actual: " << oTe << std::endl;
         cout << "Actual: " << oTe.inverse() << std::endl;
 
         NonlinearFactorGraph graph;
@@ -120,23 +135,46 @@ int main(int argc, char *argv[])
         }
 
         Values initial;
+        // initial.insert(X(1), Pose3(
+        //     Rot3(
+        //         -1.0, 0.0, 0.0,
+        //         0.0, 1.0, 0.0,
+        //         0.0, 0.0, -1.0), 
+        //     Point3(-0.1, -0.1, 0.1)
+        // ));
         initial.insert(X(1), Pose3(
             Rot3(
                 -1.0, 0.0, 0.0,
                 0.0, 1.0, 0.0,
                 0.0, 0.0, -1.0), 
             Point3(-0.1, -0.1, 0.1)
-        ));
-        
-        LevenbergMarquardtParams params;
-        // params.maxIterations = 1000;
+        ).inverse());
+        // initial.insert(X(1), Pose3(
+        //     Rot3(
+        //         -0.788675, -0.211325, 0.57735,
+        //         0.211325, 0.788675, 0.57735,
+        //         -0.57735, 0.57735, -0.57735),
+        //     Point3(-0, -0.5, 0.5)
+        // ));
+        // initial.insert(X(1), Pose3(
+        //     Rot3(
+        //         -0.788675, 0.211325, -0.57735,
+        //         -0.211325, 0.788675, 0.57735,
+        //         0.57735, 0.57735, -0.57735),
+        //     Point3(0, 0, 0.866025)
+        // ));
+
+        LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
+        // params.maxIterations = 30;
         // params.absoluteErrorTol = 0;
         // params.relativeErrorTol = 1e-6;
+        // params.useFixedLambdaFactor = false;
+        // params.minModelFidelity = 0.1;
         Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
         // Values result = NonlinearConjugateGradientOptimizer(graph, initial).optimize();
         result.print("Result: ");
 
-        break;
+        // break;
     }
 
     return 0;

@@ -8,9 +8,35 @@
 #include <iostream>
 #include <vector>
 
+#include <boost/optional/optional_io.hpp>
+
 using namespace gtsam;
 using namespace gtsam::noiseModel;
 using symbol_shorthand::X;
+
+class MyPriorFactor: public NoiseModelFactor1<Rot3> {
+private:
+    typedef NoiseModelFactor1<Rot3> Base;
+
+    Rot3 prior_;
+
+public:
+    MyPriorFactor(Key key, const Rot3& prior, const SharedNoiseModel& model = nullptr)
+    : Base(model, key), prior_(prior) {
+    }
+
+    Vector evaluateError(const Rot3& x, boost::optional<Matrix&> H = boost::none) const override {
+        if (H) {
+            *H = Matrix::Identity(traits<Rot3>::GetDimension(x), traits<Rot3>::GetDimension(x));
+            *H = -x.AdjointMap() * *H;
+            *H = -x.inverse().AdjointMap() * *H;
+        }
+        
+        auto error = prior_.localCoordinates(x.inverse().inverse());
+        std::cout << H << std::endl << std::flush;
+        return error;
+    }
+};
 
 int main() 
 {
@@ -23,9 +49,9 @@ int main()
         cleanPoses.push_back(Rot3::Rodrigues(1.0, 0.0, 0.0));
     }
 
-    auto poses = applyNoise(cleanPoses, 1);
+    auto poses = applyNoise(cleanPoses, 0);
     for (auto pose: poses) {
-       graph.emplace_shared<PriorFactor<Rot3>>(X(1), pose, noise); 
+       graph.emplace_shared<MyPriorFactor>(X(1), pose, noise); 
     }
 
     // graph.emplace_shared<PriorFactor<Rot3>>(X(1), Rot3::Rodrigues(1.0, 0.0, 0.0), noise);
