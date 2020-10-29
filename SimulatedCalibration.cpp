@@ -41,22 +41,13 @@ public:
     Vector evaluateError(const Pose3 &pose, 
                          boost::optional<Matrix &> H = boost::none) const override
     {
-        // auto adj = -pose.AdjointMap();
-        // std::cout << adj << std::endl << std::flush;
-        // std::cout << H << std::endl << std::flush;
-        // if (H) {
-        //     // *H = Matrix::Identity(traits<Pose3>::GetDimension(pose), traits<Pose3>::GetDimension(pose));
-        //     *H = -pose.AdjointMap(); // * *H;
-        // }
-        // std::cout << H << std::endl << std::endl << std::flush;
-
         Matrix6 Dinverse;
-        PinholePose<Cal3_S2> camera(pose.inverse(Dinverse), K_);
+        PinholePose<Cal3_S2> camera(pose.inverse(H ? &Dinverse : 0), K_);
 
         Matrix26 Dproject;
-        const auto error = camera.project(P_, Dproject, boost::none, boost::none) - p_;
-        // std::cout << H << std::endl << std::endl << std::flush;
+        const auto error = camera.project(P_, H ? &Dproject : 0, boost::none, boost::none) - p_;
 
+        // Chain the Jacobians
         if (H) {
             *H = Dproject * Dinverse;
         }

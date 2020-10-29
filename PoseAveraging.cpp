@@ -26,14 +26,16 @@ public:
     }
 
     Vector evaluateError(const Rot3& x, boost::optional<Matrix&> H = boost::none) const override {
+        Matrix3 Dinverse1;
+        Matrix3 Dinverse2;
+        auto error = prior_.localCoordinates(x.inverse(H ? &Dinverse1 : 0).inverse(H ? &Dinverse2 : 0));
+
+        // Chain the Jacobians
         if (H) {
-            *H = Matrix::Identity(traits<Rot3>::GetDimension(x), traits<Rot3>::GetDimension(x));
-            *H = -x.AdjointMap() * *H;
-            *H = -x.inverse().AdjointMap() * *H;
-        }
-        
-        auto error = prior_.localCoordinates(x.inverse().inverse());
-        std::cout << H << std::endl << std::flush;
+            *H = Dinverse2 * Dinverse1;
+        }        
+        // std::cout << H << std::endl << std::flush;
+
         return error;
     }
 };
