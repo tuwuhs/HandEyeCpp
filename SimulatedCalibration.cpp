@@ -31,18 +31,16 @@ public:
     {
     }
 
-    Vector evaluateError(const Pose3 &hTe, 
-                         const Pose3 &wTo,
+    Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo,
                          boost::optional<Matrix&> HhTe = boost::none,
                          boost::optional<Matrix&> HwTo = boost::none) const override
     {
         // Inspired from BetweenFactor
-        Matrix6 HhTeInverse;
-        Matrix6 Hlocal;
-
         Matrix6 H1;
         Matrix6 H2;
         auto eTo = hTe.between(wTh_.inverse() * wTo, H1, H2);
+
+        Matrix6 Hlocal;
         auto error = eTo_.localCoordinates(eTo, boost::none, Hlocal);
 
         if (HhTe)
@@ -209,6 +207,10 @@ int main(int argc, char *argv[])
     }
 */
 
+    // Add pose noise
+    wThList = applyNoise(wThList, 0.05, 0.5);
+
+    // Solve Hand-Eye using poses
     NonlinearFactorGraph graph;
     auto measurementNoise = nullptr;
 
