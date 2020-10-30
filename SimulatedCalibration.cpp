@@ -16,6 +16,8 @@
 using namespace gtsam;
 using namespace gtsam::noiseModel;
 using symbol_shorthand::X;
+using symbol_shorthand::A;
+using symbol_shorthand::B;
 
 class FixedHandEyePoseFactor : public NoiseModelFactor2<Pose3, Pose3>
 {
@@ -31,24 +33,41 @@ public:
     {
     }
 
+    // Inspired from BetweenFactor
     Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo,
                          boost::optional<Matrix&> HhTe = boost::none,
                          boost::optional<Matrix&> HwTo = boost::none) const override
     {
-        // Inspired from BetweenFactor
         Matrix6 H1;
         Matrix6 H2;
-        auto eTo = hTe.between(wTh_.inverse() * wTo, H1, H2);
-
+        Matrix6 H3;
+        Matrix6 H4;
         Matrix6 Hlocal;
-        auto error = eTo_.localCoordinates(eTo, boost::none, Hlocal);
+
+        // 1st variant
+        // // auto eTo = hTe.between(wTh_.inverse() * wTo, H1, H2);
+        // auto eTo = hTe.inverse(H1).compose(wTh_.inverse() * wTo, H2, H3);
+
+        // auto error = eTo_.localCoordinates(eTo, boost::none, Hlocal);
+
+        // if (HhTe)
+        //     *HhTe = Hlocal * H2 * H1;
+
+        // if (HwTo)
+        //     *HwTo = Hlocal * H3;
+        
+        // 2nd variant
+        auto wTe = wTo.compose(eTo_.inverse(), H1, boost::none);
+        auto wTh = wTe.compose(hTe.inverse(H2), H3, H4);
+
+        auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
 
         if (HhTe)
-            *HhTe = Hlocal * H1;
+            *HhTe = Hlocal * H4 * H2;
 
         if (HwTo)
-            *HwTo = Hlocal * H2;
-        
+            *HwTo = Hlocal * H3 * H1;
+
         // std::cout << error << std::endl << std::flush;
         return error;
     }
@@ -70,15 +89,32 @@ public:
     Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo, const Pose3 &eTo,
                          boost::optional<Matrix&> HhTe = boost::none,
                          boost::optional<Matrix&> HwTo = boost::none,
-                         boost::optional<Matrix&> HeTo = boost::none)
+                         boost::optional<Matrix&> HeTo = boost::none) const override
     {
-        // TODO: figure out Jacobian (read between()!)
-        auto wTh = 
-
+        Matrix6 H1;
+        Matrix6 H2;
+        Matrix6 H3;
+        Matrix6 H4;
+        Matrix6 H5;
+        Matrix6 H6;
         Matrix6 Hlocal;
+        
+        auto wTe = wTo.compose(eTo.inverse(H1), H2, H3);
+        auto wTh = wTe.compose(hTe.inverse(H4), H5, H6);
         auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
+
+        if (HhTe)
+            *HhTe = Hlocal * H6 * H4;
+
+        if (HwTo)
+            *HwTo = Hlocal * H5 * H2;
+
+        if (HeTo)
+            *HeTo = Hlocal * H5 * H3 * H1;
+
+        return error;
     }
-}
+};
 
 /**
  * Unary factor on the unknown pose, resulting from meauring the projection of
@@ -128,14 +164,14 @@ int main(int argc, char *argv[])
     auto hTe = std::get<2>(simulatedPose);
     auto wTo = std::get<3>(simulatedPose);
 
-    // for (auto wTh: wThList) {
-    //     std::cout << wTh << std::endl;
-    // }
+    std::cout << hTe << std::endl;
+    std::cout << wTo << std::endl;
     // for (auto eTo: eToList) {
     //     std::cout << eTo << std::endl;
     // }
-    std::cout << hTe << std::endl;
-    std::cout << wTo << std::endl;
+    // for (auto wTh: wThList) {
+    //     std::cout << wTh << std::endl;
+    // }
 
     // Create target object
     const int rows = 7;
@@ -236,24 +272,62 @@ int main(int argc, char *argv[])
     // Add pose noise
     wThList = applyNoise(wThList, 0.05, 0.5);
 
-    // Solve Hand-Eye using poses
+    // // Solve Hand-Eye using poses
+    // NonlinearFactorGraph graph;
+    // auto measurementNoise = nullptr;
+
+    // for (int i = 0; i < wThList.size(); i++) {
+    //     auto eTo = eToList[i];
+    //     auto wTh = wThList[i];
+    //     graph.emplace_shared<FixedHandEyePoseFactor>(
+    //         measurementNoise, A(1), B(1), eTo, wTh);
+    // }
+
+    // Values initial;
+    // initial.insert(A(1), Pose3());
+    // initial.insert(B(1), Pose3());
+
+    // LevenbergMarquardtParams params;
+    // Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+    // result.print("Result: ");
+
+    // Solve Hand-Eye using image points
     NonlinearFactorGraph graph;
     auto measurementNoise = nullptr;
 
+    Values initial;
+    auto poseIndex = 1;
     for (int i = 0; i < wThList.size(); i++) {
-        auto eTo = eToList[i];
+        auto imagePoints = imagePointsList[i];
         auto wTh = wThList[i];
-        graph.emplace_shared<FixedHandEyePoseFactor>(
-            measurementNoise, X(1), X(2), eTo, wTh);
+
+        graph.emplace_shared<HandEyePoseFactor>(
+            measurementNoise, A(1), B(1), X(poseIndex), wTh);
+
+        for (int j = 0; j < imagePoints.size(); j++) {
+            graph.emplace_shared<ResectioningFactor>(
+                measurementNoise, X(poseIndex), cameraCalibration, imagePoints[j], objectPoints[j]);            
+        }
+
+        initial.insert(X(poseIndex), Pose3(
+            Rot3(
+                -1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, -1.0), 
+            Vector3(-0.11, -0.11, 0.1)
+        ).inverse());
+
+        poseIndex++;
     }
 
-    Values initial;
-    initial.insert(X(1), Pose3());
-    initial.insert(X(2), Pose3());
+    initial.insert(A(1), Pose3());
+    initial.insert(B(1), Pose3());
 
-    LevenbergMarquardtParams params;
+    LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
     Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-    result.print("Result: ");
+    // result.print("Result: ");
+    result.at(A(1)).print("hTe");
+    result.at(B(1)).print("wto");
 
     return 0;
 }
