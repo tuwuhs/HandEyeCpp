@@ -272,24 +272,26 @@ int main(int argc, char *argv[])
     // Add pose noise
     wThList = applyNoise(wThList, 0.05, 0.5);
 
-    // // Solve Hand-Eye using poses
-    // NonlinearFactorGraph graph;
-    // auto measurementNoise = nullptr;
+/*
+    // Solve Hand-Eye using poses
+    NonlinearFactorGraph graph;
+    auto measurementNoise = nullptr;
 
-    // for (int i = 0; i < wThList.size(); i++) {
-    //     auto eTo = eToList[i];
-    //     auto wTh = wThList[i];
-    //     graph.emplace_shared<FixedHandEyePoseFactor>(
-    //         measurementNoise, A(1), B(1), eTo, wTh);
-    // }
+    for (int i = 0; i < wThList.size(); i++) {
+        auto eTo = eToList[i];
+        auto wTh = wThList[i];
+        graph.emplace_shared<FixedHandEyePoseFactor>(
+            measurementNoise, A(1), B(1), eTo, wTh);
+    }
 
-    // Values initial;
-    // initial.insert(A(1), Pose3());
-    // initial.insert(B(1), Pose3());
+    Values initial;
+    initial.insert(A(1), Pose3());
+    initial.insert(B(1), Pose3());
 
-    // LevenbergMarquardtParams params;
-    // Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-    // result.print("Result: ");
+    LevenbergMarquardtParams params;
+    Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+    result.print("Result: ");
+*/
 
     // Solve Hand-Eye using image points
     NonlinearFactorGraph graph;
@@ -323,7 +325,7 @@ int main(int argc, char *argv[])
     initial.insert(A(1), Pose3());
     initial.insert(B(1), Pose3());
 
-    LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
+    LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
     Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
     // result.print("Result: ");
     result.at(A(1)).print("hTe");
