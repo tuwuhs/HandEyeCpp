@@ -39,8 +39,15 @@ std::tuple<
     const auto eTh = gtsam::Pose3(gtsam::Rot3::AxisAngle(
         gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)
     ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)));
-
     const auto hTe = eTh.inverse();
+
+    // const auto hTe = gtsam::Pose3(
+    //     gtsam::Rot3(
+    //         1, 0, 0,
+    //         0, -1, 0,
+    //         0, 0, -1
+    //     ), gtsam::Vector3(0.1, 0.1, 0.1));
+    // const auto eTh = hTe.inverse();
 
     std::vector<gtsam::Pose3> wThList;
     std::vector<gtsam::Pose3> eToList;

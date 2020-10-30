@@ -17,6 +17,45 @@ using namespace gtsam;
 using namespace gtsam::noiseModel;
 using symbol_shorthand::X;
 
+class FixedHandEyePoseFactor : public NoiseModelFactor2<Pose3, Pose3>
+{
+    typedef NoiseModelFactor2<Pose3, Pose3> Base;
+
+    Pose3 eTo_;
+    Pose3 wTh_;
+
+public:
+    FixedHandEyePoseFactor(const SharedNoiseModel &model, const Key &hTe, const Key &wTo,
+                           const Pose3 eTo, const Pose3 wTh)
+    : Base(model, hTe, wTo), eTo_(eTo), wTh_(wTh) 
+    {
+    }
+
+    Vector evaluateError(const Pose3 &hTe, 
+                         const Pose3 &wTo,
+                         boost::optional<Matrix&> HhTe = boost::none,
+                         boost::optional<Matrix&> HwTo = boost::none) const override
+    {
+        // Inspired from BetweenFactor
+        Matrix6 HhTeInverse;
+        Matrix6 Hlocal;
+
+        Matrix6 H1;
+        Matrix6 H2;
+        auto eTo = hTe.between(wTh_.inverse() * wTo, H1, H2);
+        auto error = eTo_.localCoordinates(eTo, boost::none, Hlocal);
+
+        if (HhTe)
+            *HhTe = Hlocal * H1;
+
+        if (HwTo)
+            *HwTo = Hlocal * H2;
+        
+        // std::cout << error << std::endl << std::flush;
+        return error;
+    }
+};
+
 /**
  * Unary factor on the unknown pose, resulting from meauring the projection of
  * a known 3D point in the image
@@ -71,8 +110,8 @@ int main(int argc, char *argv[])
     // for (auto eTo: eToList) {
     //     std::cout << eTo << std::endl;
     // }
-    // std::cout << wTo << std::endl;
-    // std::cout << hTe << std::endl;
+    std::cout << hTe << std::endl;
+    std::cout << wTo << std::endl;
 
     // Create target object
     const int rows = 7;
@@ -109,6 +148,7 @@ int main(int argc, char *argv[])
     //     std::cout << std::endl;
     // }
 
+/*
     // Try camera resectioning
     for (int i = 0; i < wThList.size(); i++) {
         const auto imagePoints = imagePointsList[i];
@@ -131,28 +171,28 @@ int main(int argc, char *argv[])
         //         -1.0, 0.0, 0.0,
         //         0.0, 1.0, 0.0,
         //         0.0, 0.0, -1.0), 
-        //     Point3(-0.1, -0.1, 0.1)
+        //     Vector3(-0.1, -0.1, 0.1)
         // ));
         initial.insert(X(1), Pose3(
             Rot3(
                 -1.0, 0.0, 0.0,
                 0.0, 1.0, 0.0,
                 0.0, 0.0, -1.0), 
-            Point3(-0.1, -0.1, 0.1)
+            Vector3(-0.1, -0.1, 0.1)
         ).inverse());
         // initial.insert(X(1), Pose3(
         //     Rot3(
         //         -0.788675, -0.211325, 0.57735,
         //         0.211325, 0.788675, 0.57735,
         //         -0.57735, 0.57735, -0.57735),
-        //     Point3(-0, -0.5, 0.5)
+        //     Vector3(-0, -0.5, 0.5)
         // ));
         // initial.insert(X(1), Pose3(
         //     Rot3(
         //         -0.788675, 0.211325, -0.57735,
         //         -0.211325, 0.788675, 0.57735,
         //         0.57735, 0.57735, -0.57735),
-        //     Point3(0, 0, 0.866025)
+        //     Vector3(0, 0, 0.866025)
         // ));
 
         LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
@@ -165,8 +205,27 @@ int main(int argc, char *argv[])
         // Values result = NonlinearConjugateGradientOptimizer(graph, initial).optimize();
         result.print("Result: ");
 
-        // break;
+        break;
     }
+*/
+
+    NonlinearFactorGraph graph;
+    auto measurementNoise = nullptr;
+
+    for (int i = 0; i < wThList.size(); i++) {
+        auto eTo = eToList[i];
+        auto wTh = wThList[i];
+        graph.emplace_shared<FixedHandEyePoseFactor>(
+            measurementNoise, X(1), X(2), eTo, wTh);
+    }
+
+    Values initial;
+    initial.insert(X(1), Pose3());
+    initial.insert(X(2), Pose3());
+
+    LevenbergMarquardtParams params;
+    Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+    result.print("Result: ");
 
     return 0;
 }

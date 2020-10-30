@@ -22,10 +22,12 @@ private:
 
 public:
     MyPriorFactor(Key key, const Rot3& prior, const SharedNoiseModel& model = nullptr)
-    : Base(model, key), prior_(prior) {
+    : Base(model, key), prior_(prior) 
+    {
     }
 
-    Vector evaluateError(const Rot3& x, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const Rot3& x, boost::optional<Matrix&> H = boost::none) const override 
+    {
         Matrix3 Dinverse1;
         Matrix3 Dinverse2;
         auto error = prior_.localCoordinates(x.inverse(H ? &Dinverse1 : 0).inverse(H ? &Dinverse2 : 0));
