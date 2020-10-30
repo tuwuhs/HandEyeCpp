@@ -54,6 +54,32 @@ public:
     }
 };
 
+class HandEyePoseFactor : public NoiseModelFactor3<Pose3, Pose3, Pose3>
+{
+    typedef NoiseModelFactor3<Pose3, Pose3, Pose3> Base;
+
+    Pose3 wTh_;
+
+public:
+    HandEyePoseFactor(const SharedNoiseModel &model, const Key &hTe, const Key &wTo,
+                      const Key &eTo, const Pose3 wTh)
+    : Base(model, hTe, wTo, eTo), wTh_(wTh)
+    {
+    }
+
+    Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo, const Pose3 &eTo,
+                         boost::optional<Matrix&> HhTe = boost::none,
+                         boost::optional<Matrix&> HwTo = boost::none,
+                         boost::optional<Matrix&> HeTo = boost::none)
+    {
+        // TODO: figure out Jacobian (read between()!)
+        auto wTh = 
+
+        Matrix6 Hlocal;
+        auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
+    }
+}
+
 /**
  * Unary factor on the unknown pose, resulting from meauring the projection of
  * a known 3D point in the image
