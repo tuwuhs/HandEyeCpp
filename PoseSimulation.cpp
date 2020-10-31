@@ -11,7 +11,9 @@ std::tuple<
     std::vector<gtsam::Pose3>,
     gtsam::Pose3,
     gtsam::Pose3
-> simulatePoseKoide()
+> simulatePoseKoide(
+    boost::optional<gtsam::Pose3> eTh_,
+    boost::optional<gtsam::Pose3> wTo_)
 {
     double xRange = 1.0;
     double yRange = 1.0;
@@ -28,7 +30,9 @@ std::tuple<
     double handToEyeTrans = 0.3;
     double handToEyeRotDeg = 90.0;
 
-    const auto wTo = gtsam::Pose3(gtsam::Rot3(), gtsam::Point3(1.0, 0.0, 0.0));
+    const auto wTo = wTo_.value_or(
+        gtsam::Pose3(gtsam::Rot3(), gtsam::Point3(1.0, 0.0, 0.0))
+    );
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -36,9 +40,11 @@ std::tuple<
     std::normal_distribution<double> transDistribution(0.0, handToEyeTrans);
     std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
 
-    const auto eTh = gtsam::Pose3(gtsam::Rot3::AxisAngle(
-        gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)
-    ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)));
+    const auto eTh = eTh_.value_or(
+        gtsam::Pose3(gtsam::Rot3::AxisAngle(
+            gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)
+        ), transDistribution(gen) * gtsam::Unit3(uniform(gen), uniform(gen), uniform(gen)))
+    );
     const auto hTe = eTh.inverse();
 
     // const auto hTe = gtsam::Pose3(
