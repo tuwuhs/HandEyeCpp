@@ -12,14 +12,14 @@ class ResectioningFactor : public NoiseModelFactor1<Pose3>
 {
     typedef NoiseModelFactor1<Pose3> Base;
 
-    Cal3_S2::shared_ptr K_; ///< camera's intrinsic parameters
-    Point3 P_;              ///< 3D point on the calibration rig
-    Point2 p_;              ///< 2D measurement of the 3D point
+    const Cal3_S2::shared_ptr K_;  ///< camera's intrinsic parameters
+    const Vector3 P_;              ///< 3D point on the calibration rig
+    const Vector2 p_;              ///< 2D measurement of the 3D point
 
 public:
     /// Construct factor given known point P and its projection p
     ResectioningFactor(const SharedNoiseModel &model, const Key &key,
-                       const Cal3_S2::shared_ptr &calib, const Point2 &p, const Point3 &P) 
+                       const Cal3_S2::shared_ptr calib, const Vector2 &p, const Vector3 &P) 
                        : Base(model, key), K_(calib), P_(P), p_(p)
     {
     }

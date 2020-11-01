@@ -34,7 +34,7 @@ std::tuple<
     double handToEyeRotDeg = 90.0;
 
     const auto wTo = wTo_.value_or(
-        gtsam::Pose3(gtsam::Rot3(), gtsam::Point3(1.0, 0.0, 0.0))
+        gtsam::Pose3(gtsam::Rot3(), gtsam::Vector3(0.3, 0.3, 0.0))
     );
 
     std::random_device rd;
@@ -63,13 +63,13 @@ std::tuple<
     for (double z = 0.0; z <= zRange; z += 1.0) {
         for (double y = -yRange; y <= yRange; y += 1.0) {
             for (double x = -xRange; x <= xRange; x += 1.0) {
-                const auto wTe_t = gtsam::Point3(
+                const auto wTe_t = gtsam::Vector3(
                     xOffset + xStep * x,
                     yOffset + yStep * y,
                     zOffset + zStep * z);
                 
                 const auto rotInit = gtsam::Rot3::AxisAngle(gtsam::Unit3(0.0, 1.0, 0.0), M_PI);
-                const auto zfrom = rotInit * gtsam::Point3(0.0, 0.0, 1.0);
+                const auto zfrom = rotInit * gtsam::Vector3(0.0, 0.0, 1.0);
                 const auto zto = (wTo.translation() - wTe_t).normalized();
 
                 const auto angle = acos(zfrom.dot(zto));
@@ -135,7 +135,7 @@ std::vector<gtsam::Rot3> applyNoise(
 std::vector<std::vector<gtsam::Vector2>> projectPoints(
     const std::vector<gtsam::Pose3>& eToList,
     const std::vector<gtsam::Vector3>& objectPoints,
-    const boost::shared_ptr<gtsam::Cal3_S2> calibration)
+    const gtsam::Cal3_S2::shared_ptr calibration)
 {
     std::vector<std::vector<gtsam::Vector2>> imagePointsList;
     for (auto eTo: eToList) {

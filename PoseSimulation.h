@@ -24,6 +24,6 @@ std::vector<gtsam::Rot3> applyNoise(
 std::vector<std::vector<gtsam::Vector2>> projectPoints(
     const std::vector<gtsam::Pose3>& eToList,
     const std::vector<gtsam::Vector3>& objectPoints,
-    const boost::shared_ptr<gtsam::Cal3_S2> calibration);
+    const gtsam::Cal3_S2::shared_ptr calibration);
 
 std::vector<gtsam::Vector3> createTargetObject(int rows, int cols, double dimension);

@@ -22,7 +22,13 @@ using symbol_shorthand::B;
 
 int main(int argc, char* argv[])
 {
-    auto simulatedPose = simulatePoseKoide();
+    auto simulatedPose = simulatePoseKoide(Pose3(
+        Rot3(
+            1, 0, 0,
+            0, -1, 0,
+            0, 0, -1), 
+        Vector3(0.1, 0.1, 0.1)).inverse());
+    
     auto wThList = std::get<0>(simulatedPose);
     auto eToList = std::get<1>(simulatedPose);
     auto hTe = std::get<2>(simulatedPose);
