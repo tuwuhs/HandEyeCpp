@@ -44,11 +44,39 @@ int main(int argc, char* argv[])
     // }
 
     // Create target object
-    const auto objectPoints = createTargetObject(7, 5, 0.15);
+    const auto objectPoints = createTargetObject(3, 2, 0.15);
 
     // Project points
     const auto cameraCalibration = boost::make_shared<Cal3_S2>(Cal3_S2(300.0, 300.0, 0.0, 320.0, 240.0));
     const auto imagePointsList = projectPoints(eToList, objectPoints, cameraCalibration);
+
+    auto measurementNoise = nullptr;
+
+    for (int i = 0; i < imagePointsList.size(); i++) {
+        auto imagePoints = imagePointsList[i];
+        auto eTo = eToList[i];
+
+        for (int j = 0; j < imagePoints.size(); j++) {
+            auto crf = ResectioningFactor(measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
+
+            // std::cout << imagePoints[j] << std::endl;
+            // std::cout << objectPoints[j] << std::endl;
+
+            auto currPose = Pose3(
+                Rot3(),
+                Vector3(0.2, 0.4, 0.0)) * eTo;
+            
+            Matrix jac;
+            auto error = crf.evaluateError(currPose, jac);
+            
+            std::cout << error << std::endl;
+            std::cout << jac << std::endl;
+
+            std::cout << std::endl;
+        }
+
+        break;
+    }
 
     return 0;
 }

@@ -4,6 +4,8 @@ project(HelloGTSAM VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
+set(default_build_type "Release")
+
 ##############################################################################
 # GTSAM
 # # Include GTSAM CMake tools

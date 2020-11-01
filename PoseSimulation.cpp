@@ -157,8 +157,8 @@ std::vector<gtsam::Vector3> createTargetObject(int rows, int cols, double dimens
     for (int row = 0; row < rows; row++) {
         for (int col = 0; col < cols; col++) {
             objectPoints.push_back(dimension * gtsam::Vector3(
-                0.5 * (row - rows + 1),
-                0.5 * (col - cols + 1),
+                row - 0.5 * (rows - 1),
+                col - 0.5 * (cols - 1),
                 0.0
             ));
         }

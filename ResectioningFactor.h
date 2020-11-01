@@ -26,7 +26,7 @@ public:
 
     /// evaluate the error
     Vector evaluateError(const Pose3 &pose, 
-                         boost::optional<Matrix &> H = boost::none) const override
+                         boost::optional<Matrix&> H = boost::none) const override
     {
         Matrix6 Dinverse;
         PinholePose<Cal3_S2> camera(pose.inverse(H ? &Dinverse : 0), K_);
