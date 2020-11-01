@@ -86,24 +86,28 @@ int main(int argc, char* argv[])
         auto wTh = wThList[i];
 
         auto hepf = HandEyePoseFactor(measurementNoise, X(1), X(2), X(3), wTh);
+        // auto fhepf = FixedHandEyePoseFactor(measurementNoise, X(1), X(2), eTo, wTh);
 
-        auto hTe_curr = Pose3() * hTe;
-            // Rot3(
-            //     -1, 0, 0,
-            //     0, 1, 0,
-            //     0, 0, -1),
-            // Vector3(0.1, 0.1, 0.1)) * hTe;
+        auto hTe_curr = Pose3( //) * hTe;
+            Rot3(
+                -1, 0, 0,
+                0, 1, 0,
+                0, 0, -1),
+            Vector3(0.1, 0.1, 0.1)) * hTe;
         
-        auto eTo_curr = Pose3( // ) * eTo;
+        auto eTo_curr = Pose3( //) * eTo;
             Rot3(),
             Vector3(0.2, 0.4, 0.0)) * eTo;
 
-        auto wTo_curr = wTh * hTe * eTo;
+        auto wTo_curr = Pose3( //) * wTo;
+            Rot3(),
+            Vector3(0.2, 0.4, 0.0)) * wTo;
 
         Matrix HhTe;
         Matrix HwTo;
         Matrix HeTo;
         auto error = hepf.evaluateError(hTe_curr, wTo_curr, eTo_curr, HhTe, HwTo, HeTo);
+        // auto error = fhepf.evaluateError(hTe_curr, wTo_curr, HhTe, HwTo);
 
         std::cout << error << std::endl;
         std::cout << HhTe << std::endl;

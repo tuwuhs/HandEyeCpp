@@ -60,12 +60,18 @@ public:
         auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
 
         if (HhTe)
-            *HhTe = Hlocal * H4 * H2;
+            *HhTe = H4 * H2;
 
         if (HwTo)
-            *HwTo = Hlocal * H3 * H1;
+            *HwTo = H3 * H1;
 
+        // std::cout << H1 << std::endl;
+        // std::cout << H2 << std::endl;
+        // std::cout << H3 << std::endl;
+        // std::cout << H4 << std::endl;
+        // std::cout << Hlocal << std::endl;
         // std::cout << error << std::endl << std::flush;
+
         return error;
     }
 };
@@ -95,19 +101,30 @@ public:
         Matrix6 H5;
         Matrix6 H6;
         Matrix6 Hlocal;
+        Matrix6 Hlocal1;
         
         auto wTe = wTo.compose(eTo.inverse(H1), H2, H3);
         auto wTh = wTe.compose(hTe.inverse(H4), H5, H6);
-        auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
+        auto error = wTh_.localCoordinates(wTh, Hlocal1, Hlocal);
 
         if (HhTe)
-            *HhTe = Hlocal * H6 * H4;
+            *HhTe = H6 * H4;
 
         if (HwTo)
-            *HwTo = Hlocal * H5 * H2;
+            *HwTo = H5 * H2;
 
         if (HeTo)
-            *HeTo = Hlocal * H5 * H3 * H1;
+            *HeTo = H5 * H3 * H1;
+
+        // std::cout << H1 << std::endl;
+        // std::cout << H2 << std::endl;
+        // std::cout << H3 << std::endl;
+        // std::cout << H4 << std::endl;
+        // std::cout << H5 << std::endl;
+        // std::cout << H6 << std::endl;
+        // std::cout << Hlocal1 << std::endl;
+        // std::cout << Hlocal << std::endl;
+        // std::cout << error << std::endl << std::flush;
 
         return error;
     }
