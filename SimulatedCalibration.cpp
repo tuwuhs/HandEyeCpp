@@ -135,32 +135,11 @@ int main(int argc, char *argv[])
     // }
 
     // Create target object
-    const int rows = 7;
-    const int cols = 5;
-    const double dimension = 0.1;
-    std::vector<Point3> objectPoints;
-    for (int row = 0; row < rows; row++) {
-        for (int col = 0; col < cols; col++) {
-            objectPoints.push_back(dimension * Point3(
-                0.5 * (row - rows + 1),
-                0.5 * (col - cols + 1),
-                0.0
-            ));
-        }
-    }
+    const auto objectPoints = createTargetObject(7, 5, 0.15);
 
     // Project points
     const auto cameraCalibration = boost::make_shared<Cal3_S2>(Cal3_S2(300.0, 300.0, 0.0, 320.0, 240.0));
-    std::vector<std::vector<Point2>> imagePointsList;
-    for (auto wTh: wThList) {
-        const auto oTe = wTo.inverse() * wTh * hTe;
-        const auto cam = PinholePose<Cal3_S2>(oTe, cameraCalibration);
-        std::vector<Point2> imagePoints;
-        for (auto objectPoint: objectPoints) {
-            imagePoints.push_back(cam.project(objectPoint));
-        }
-        imagePointsList.push_back(imagePoints);
-    }
+    const auto imagePointsList = projectPoints(eToList, objectPoints, cameraCalibration);
 
     // for (auto imagePoints: imagePointsList) {
     //     for (auto imagePoint: imagePoints) {

@@ -1,6 +1,9 @@
 
 #include "PoseSimulation.h"
 
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/Pose3.h>
 
 #include <random>
@@ -90,7 +93,7 @@ std::tuple<
 }
 
 std::vector<gtsam::Pose3> applyNoise(
-    std::vector<gtsam::Pose3> poses, double stdevTrans, double stdevRotDeg)
+    const std::vector<gtsam::Pose3>& poses, double stdevTrans, double stdevRotDeg)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -111,7 +114,7 @@ std::vector<gtsam::Pose3> applyNoise(
 }
 
 std::vector<gtsam::Rot3> applyNoise(
-    std::vector<gtsam::Rot3> poses, double stdevRotDeg)
+    const std::vector<gtsam::Rot3>& poses, double stdevRotDeg)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -127,4 +130,39 @@ std::vector<gtsam::Rot3> applyNoise(
     }
 
     return result;
+}
+
+std::vector<std::vector<gtsam::Vector2>> projectPoints(
+    const std::vector<gtsam::Pose3>& eToList,
+    const std::vector<gtsam::Vector3>& objectPoints,
+    const boost::shared_ptr<gtsam::Cal3_S2> calibration)
+{
+    std::vector<std::vector<gtsam::Vector2>> imagePointsList;
+    for (auto eTo: eToList) {
+        const auto oTe = eTo.inverse();
+        const auto cam = gtsam::PinholePose<gtsam::Cal3_S2>(oTe, calibration);
+        std::vector<gtsam::Vector2> imagePoints;
+        for (auto objectPoint: objectPoints) {
+            imagePoints.push_back(cam.project(objectPoint));
+        }
+        imagePointsList.push_back(imagePoints);
+    }
+
+    return imagePointsList;
+}
+
+std::vector<gtsam::Vector3> createTargetObject(int rows, int cols, double dimension)
+{
+    std::vector<gtsam::Vector3> objectPoints;
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            objectPoints.push_back(dimension * gtsam::Vector3(
+                0.5 * (row - rows + 1),
+                0.5 * (col - cols + 1),
+                0.0
+            ));
+        }
+    }
+
+    return objectPoints;
 }
