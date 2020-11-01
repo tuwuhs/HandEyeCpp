@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/Cal3_S2.h>

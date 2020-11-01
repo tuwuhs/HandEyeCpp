@@ -11,6 +11,7 @@
 
 #include <vector>
 
+#include "HandEyeCalibration.h"
 #include "PoseSimulation.h"
 #include "ResectioningFactor.h"
 
@@ -74,6 +75,42 @@ int main(int argc, char* argv[])
 
             std::cout << std::endl;
         }
+
+        break;
+    }
+
+    std::cout << std::endl;
+
+    for (int i = 0; i < eToList.size(); i++) {
+        auto eTo = eToList[i];
+        auto wTh = wThList[i];
+
+        auto hepf = HandEyePoseFactor(measurementNoise, X(1), X(2), X(3), wTh);
+
+        auto hTe_curr = Pose3() * hTe;
+            // Rot3(
+            //     -1, 0, 0,
+            //     0, 1, 0,
+            //     0, 0, -1),
+            // Vector3(0.1, 0.1, 0.1)) * hTe;
+        
+        auto eTo_curr = Pose3( // ) * eTo;
+            Rot3(),
+            Vector3(0.2, 0.4, 0.0)) * eTo;
+
+        auto wTo_curr = wTh * hTe * eTo;
+
+        Matrix HhTe;
+        Matrix HwTo;
+        Matrix HeTo;
+        auto error = hepf.evaluateError(hTe_curr, wTo_curr, eTo_curr, HhTe, HwTo, HeTo);
+
+        std::cout << error << std::endl;
+        std::cout << HhTe << std::endl;
+        std::cout << HwTo << std::endl;
+        std::cout << HeTo << std::endl;
+        
+        std::cout << std::endl;
 
         break;
     }
