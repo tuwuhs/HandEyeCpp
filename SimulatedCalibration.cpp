@@ -38,10 +38,8 @@ int main(int argc, char *argv[])
     //     std::cout << wTh << std::endl;
     // }
 
-    // Create target object
-    const auto objectPoints = createTargetObject(7, 5, 0.15);
-
     // Project points
+    const auto objectPoints = createTargetObject(3, 3, 0.25);
     const auto cameraCalibration = boost::make_shared<Cal3_S2>(Cal3_S2(300.0, 300.0, 0.0, 320.0, 240.0));
     const auto imagePointsList = projectPoints(eToList, objectPoints, cameraCalibration);
 
@@ -114,7 +112,7 @@ int main(int argc, char *argv[])
 */
 
     // Add pose noise
-    wThList = applyNoise(wThList, 0.05, 0.5);
+    // wThList = applyNoise(wThList, 0.01, 0.1);
 
 /*
     // Solve Hand-Eye using poses
