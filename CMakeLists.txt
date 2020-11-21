@@ -20,6 +20,7 @@ set(default_build_type "Release")
 # Find GTSAM components
 find_package(GTSAM REQUIRED)
 
+find_package(yaml-cpp REQUIRED)
 
 ##############################################################################
 add_executable(SimulatedCalibration SimulatedCalibration.cpp PoseSimulation.cpp)
@@ -30,6 +31,9 @@ target_link_libraries(PoseAveraging PUBLIC gtsam)
 
 add_executable(Jacobians Jacobians.cpp PoseSimulation.cpp)
 target_link_libraries(Jacobians PUBLIC gtsam)
+
+add_executable(HelloYaml HelloYaml.cpp)
+target_link_libraries(HelloYaml PUBLIC yaml-cpp)
 
 ##############################################################################
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
