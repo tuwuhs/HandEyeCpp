@@ -105,11 +105,10 @@ int main(int argc, char *argv[])
     // ));
     initial.insert(X(1), Pose3(
       Rot3(
-        -1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
+        1.0, 0.0, 0.0,
+        0.0, -1.0, 0.0,
         0.0, 0.0, -1.0), 
-      Vector3(-0.1, -0.1, 0.1)
-    ).inverse());
+      Vector3(-0.1, -0.1, 0.1)));
     // initial.insert(X(1), Pose3(
     //   Rot3(
     //     -0.788675, -0.211325, 0.57735,
@@ -180,10 +179,10 @@ int main(int argc, char *argv[])
 
     initial.insert(X(poseIndex), Pose3(
       Rot3(
-        -1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
+        1.0, 0.0, 0.0,
+        0.0, -1.0, 0.0,
         0.0, 0.0, -1.0),
-      Vector3(-0.11, -0.11, 0.1)).inverse());
+      Vector3(-0.1, -0.1, 0.1)));
 
     poseIndex++;
   }
@@ -196,7 +195,7 @@ int main(int argc, char *argv[])
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
   result.at(B(1)).print("wto");
-  // std::cout << result.at(A(1)).cast<Pose3>().inverse() << std::endl << std::endl;
+  result.at(B(1)).cast<Pose3>().inverse().print("oTw");
 
   return 0;
 }
