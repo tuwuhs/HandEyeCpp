@@ -1,7 +1,116 @@
 
-#include "yaml-cpp/yaml.h"
+#include <yaml-cpp/yaml.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Pose3.h>
 
 #include <iostream>
+#include <vector>
+
+using namespace gtsam;
+
+namespace YAML
+{
+  template<>
+  struct convert<Vector3> 
+  {
+    static YAML::Node encode(const Vector3& rhs) {
+      YAML::Node node;
+      node.push_back(rhs[0]);
+      node.push_back(rhs[1]);
+      node.push_back(rhs[2]);
+      return node;
+    }
+
+    static bool decode(const YAML::Node& node, Vector3& rhs) {
+      if (!node.IsSequence() || node.size() != 3) {
+        return false;
+      }
+
+      rhs = Vector3(node[0].as<double>(), node[1].as<double>(), node[2].as<double>());
+      return true;
+    }
+  };
+
+  template<>
+  struct convert<Vector2> 
+  {
+    static YAML::Node encode(const Vector2& rhs) {
+      YAML::Node node;
+      node.push_back(rhs[0]);
+      node.push_back(rhs[1]);
+      return node;
+    }
+
+    static bool decode(const YAML::Node& node, Vector2& rhs) {
+      if (!node.IsSequence() || node.size() != 2) {
+        return false;
+      }
+
+      rhs = Vector2(node[0].as<double>(), node[1].as<double>());
+      return true;
+    }
+  };
+
+  template<>
+  struct convert<Cal3_S2>
+  {
+    static YAML::Node encode(const Cal3_S2& rhs) {
+      YAML::Node node;
+      node["fx"] = rhs.fx();
+      node["fy"] = rhs.fy();
+      node["s"] = rhs.skew();
+      node["u0"] = rhs.px();
+      node["v0"] = rhs.py();
+      return node;
+    }
+
+    static bool decode(const YAML::Node& node, Cal3_S2& rhs) {
+      auto fx = node["fx"];
+      auto fy = node["fy"];
+      auto s = node["s"];
+      auto u0 = node["u0"];
+      auto v0 = node["v0"];
+      if (!node.IsMap() || !fx || !fy || !s || !u0 || !v0) {
+        return false;
+      }
+
+      rhs = Cal3_S2(
+        fx.as<double>(),
+        fy.as<double>(),
+        s.as<double>(),
+        u0.as<double>(),
+        v0.as<double>()
+      );
+      return true;
+    }
+  };
+
+  template<>
+  struct convert<Pose3>
+  {
+    static YAML::Node encode(const Pose3& rhs) {
+      YAML::Node node;
+      node["rvec"] = Rot3::Logmap(rhs.rotation());
+      node["tvec"] = rhs.translation();
+      return node;
+    }
+
+    static bool decode(const YAML::Node& node, Pose3& rhs) {
+      auto rvec = node["rvec"];
+      auto tvec = node["tvec"];
+      if (!node.IsMap() || !rvec || !tvec) {
+        return false;
+      }
+
+      rhs = Pose3(
+        Rot3::Rodrigues(rvec.as<Vector3>()),
+        tvec.as<Vector3>()
+      );
+      return true;
+    }
+  };
+}
 
 int main(int argc, char* argv[])
 {
@@ -10,7 +119,7 @@ int main(int argc, char* argv[])
   out << YAML::BeginMap;
 
   out << YAML::Key << "yeah";
-  out << YAML::Value << YAML::BeginSeq;
+  out << YAML::Value << YAML::Flow << YAML::BeginSeq;
   out << "eggs";
   out << "bread";
   out << "milk";
@@ -22,6 +131,30 @@ int main(int argc, char* argv[])
   out << YAML::EndMap;
 
   std::cout << out.c_str() << std::endl;
+  std::cout << std::endl;
+
+  YAML::Node root = YAML::LoadFile("yeah.yaml");
+  
+  std::vector<Pose3> wThList;
+  std::vector<std::vector<Vector2>> imagePointsList;
+  for (auto view: root["views"]) {
+    wThList.push_back(view["wTh"].as<Pose3>());
+    imagePointsList.push_back(view["image_points"].as<std::vector<Vector2>>());
+  }
+  auto objectPoints = root["object_points"].as<std::vector<Vector3>>();
+  auto cameraCalibration = root["camera_calibration"].as<Cal3_S2>();
+
+  for (auto imagePoints: imagePointsList) {
+    for (auto p: imagePoints) {
+      std::cout << p << std::endl << std::endl;
+    }
+    break;
+  }
+
+  for (auto wTh: wThList) {
+    std::cout << wTh << std::endl << std::endl;
+    break;
+  }
 
   return 0;
 }
