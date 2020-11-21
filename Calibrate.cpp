@@ -27,29 +27,34 @@ std::tuple<
   std::vector<Vector3>, 
   std::vector<std::vector<Vector2>>, 
   std::vector<Pose3>, 
+  std::vector<Pose3>, 
   Cal3_S2> readDataset(std::string filename)
 {
   YAML::Node root = YAML::LoadFile(filename);
   
   std::vector<Pose3> wThList;
+  std::vector<Pose3> eToList;
   std::vector<std::vector<Vector2>> imagePointsList;
   for (auto view: root["views"]) {
     wThList.push_back(view["wTh"].as<Pose3>());
+    if (view["eTo"])
+      eToList.push_back(view["eTo"].as<Pose3>());
     imagePointsList.push_back(view["image_points"].as<std::vector<Vector2>>());
   }
   auto objectPoints = root["object_points"].as<std::vector<Vector3>>();
   auto cameraCalibration = root["camera_calibration"].as<Cal3_S2>();
 
-  return std::tie(objectPoints, imagePointsList, wThList, cameraCalibration);
+  return std::tie(objectPoints, imagePointsList, wThList, eToList, cameraCalibration);
 }
 
 int main(int argc, char *argv[])
 {
-  auto dataset = readDataset("yeah.yaml");
+  auto dataset = readDataset("out.yaml");
   auto objectPoints = std::get<0>(dataset);
   auto imagePointsList = std::get<1>(dataset);
   auto wThList = std::get<2>(dataset);
-  auto cameraCalibration = boost::make_shared<Cal3_S2>(std::get<3>(dataset));
+  auto eToList = std::get<3>(dataset);
+  auto cameraCalibration = boost::make_shared<Cal3_S2>(std::get<4>(dataset));
 
   // std::cout << hTe << std::endl;
   // std::cout << wTo << std::endl;
@@ -72,14 +77,15 @@ int main(int argc, char *argv[])
   //   std::cout << std::endl;
   // }
 
-  /*
+  
   // Try camera resectioning
   for (int i = 0; i < wThList.size(); i++) {
     const auto imagePoints = imagePointsList[i];
     const auto wTh = wThList[i];
-    const auto oTe = wTo.inverse() * wTh * hTe;
-    // cout << "Actual: " << oTe << std::endl;
-    cout << "Actual: " << oTe.inverse() << std::endl;
+    if (eToList.size() > 0) {
+      const auto eTo = eToList[i];
+      cout << "Actual: " << eTo << std::endl;
+    }
 
     NonlinearFactorGraph graph;
     auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
@@ -128,10 +134,7 @@ int main(int argc, char *argv[])
     Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
     // Values result = NonlinearConjugateGradientOptimizer(graph, initial).optimize();
     result.print("Result: ");
-
-    break;
   }
-  */
 
   // Add pose noise
   // wThList = applyNoise(wThList, 0.01, 0.1);
@@ -193,6 +196,7 @@ int main(int argc, char *argv[])
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
   result.at(B(1)).print("wto");
+  // std::cout << result.at(A(1)).cast<Pose3>().inverse() << std::endl << std::endl;
 
   return 0;
 }
