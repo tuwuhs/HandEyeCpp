@@ -14,7 +14,8 @@ namespace YAML
   template<>
   struct convert<Vector3> 
   {
-    static YAML::Node encode(const Vector3& rhs) {
+    static YAML::Node encode(const Vector3& rhs)
+    {
       YAML::Node node;
       node.push_back(rhs[0]);
       node.push_back(rhs[1]);
@@ -22,7 +23,8 @@ namespace YAML
       return node;
     }
 
-    static bool decode(const YAML::Node& node, Vector3& rhs) {
+    static bool decode(const YAML::Node& node, Vector3& rhs) 
+    {
       if (!node.IsSequence() || node.size() != 3) {
         return false;
       }
@@ -35,14 +37,16 @@ namespace YAML
   template<>
   struct convert<Vector2> 
   {
-    static YAML::Node encode(const Vector2& rhs) {
+    static YAML::Node encode(const Vector2& rhs) 
+    {
       YAML::Node node;
       node.push_back(rhs[0]);
       node.push_back(rhs[1]);
       return node;
     }
 
-    static bool decode(const YAML::Node& node, Vector2& rhs) {
+    static bool decode(const YAML::Node& node, Vector2& rhs) 
+    {
       if (!node.IsSequence() || node.size() != 2) {
         return false;
       }
@@ -55,7 +59,8 @@ namespace YAML
   template<>
   struct convert<Cal3_S2>
   {
-    static YAML::Node encode(const Cal3_S2& rhs) {
+    static YAML::Node encode(const Cal3_S2& rhs) 
+    {
       YAML::Node node;
       node["fx"] = rhs.fx();
       node["fy"] = rhs.fy();
@@ -65,7 +70,8 @@ namespace YAML
       return node;
     }
 
-    static bool decode(const YAML::Node& node, Cal3_S2& rhs) {
+    static bool decode(const YAML::Node& node, Cal3_S2& rhs) 
+    {
       auto fx = node["fx"];
       auto fy = node["fy"];
       auto s = node["s"];
@@ -89,14 +95,16 @@ namespace YAML
   template<>
   struct convert<Pose3>
   {
-    static YAML::Node encode(const Pose3& rhs) {
+    static YAML::Node encode(const Pose3& rhs) 
+    {
       YAML::Node node;
       node["rvec"] = Rot3::Logmap(rhs.rotation());
       node["tvec"] = rhs.translation();
       return node;
     }
 
-    static bool decode(const YAML::Node& node, Pose3& rhs) {
+    static bool decode(const YAML::Node& node, Pose3& rhs) 
+    {
       auto rvec = node["rvec"];
       auto tvec = node["tvec"];
       if (!node.IsMap() || !rvec || !tvec) {
