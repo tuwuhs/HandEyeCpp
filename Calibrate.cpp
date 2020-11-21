@@ -50,7 +50,7 @@ std::tuple<
 
 int main(int argc, char *argv[])
 {
-  auto dataset = readDataset("out.yaml");
+  auto dataset = readDataset(argv[1]);
   auto objectPoints = std::get<0>(dataset);
   auto imagePointsList = std::get<1>(dataset);
   auto wThList = std::get<2>(dataset);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
-  result.at(B(1)).print("wto");
+  result.at(B(1)).print("wTo");
   result.at(B(1)).cast<Pose3>().inverse().print("oTw");
 
   return 0;

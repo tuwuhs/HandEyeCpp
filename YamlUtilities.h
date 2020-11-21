@@ -121,21 +121,30 @@ namespace YAML
       auto u0 = node["u0"];
       auto v0 = node["v0"];
       auto distortionCoefficients = node["distortion_coefficients"];
-      if (!node.IsMap() || !fx || !fy || !s || !u0 || !v0 || !distortionCoefficients) {
+      if (!node.IsMap() || !fx || !fy || !s || !u0 || !v0) {
         return false;
       }
 
-      rhs = Cal3DS2(
-        fx.as<double>(),
-        fy.as<double>(),
-        s.as<double>(),
-        u0.as<double>(),
-        v0.as<double>(),
-        distortionCoefficients[0].as<double>(),
-        distortionCoefficients[1].as<double>(),
-        distortionCoefficients[2].as<double>(),
-        distortionCoefficients[3].as<double>()
-      );
+      if (distortionCoefficients) {
+        rhs = Cal3DS2(
+          fx.as<double>(),
+          fy.as<double>(),
+          s.as<double>(),
+          u0.as<double>(),
+          v0.as<double>(),
+          distortionCoefficients[0].as<double>(),
+          distortionCoefficients[1].as<double>(),
+          distortionCoefficients[2].as<double>(),
+          distortionCoefficients[3].as<double>());
+      } else {
+        rhs = Cal3DS2(
+          fx.as<double>(),
+          fy.as<double>(),
+          s.as<double>(),
+          u0.as<double>(),
+          v0.as<double>(),
+          0, 0, 0, 0);
+      }
       return true;
     }
   };
