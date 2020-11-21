@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
       measurementNoise, A(1), B(1), X(poseIndex), wTh);
 
     for (int j = 0; j < imagePoints.size(); j++) {
-      graph.emplace_shared<ResectioningFactor>(
+      graph.emplace_shared<ResectioningFactor<Cal3_S2>>(
         measurementNoise, X(poseIndex), cameraCalibration, imagePoints[j], objectPoints[j]);
     }
 

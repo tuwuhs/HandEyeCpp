@@ -6,6 +6,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <boost/make_shared.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <yaml-cpp/yaml.h>
@@ -28,7 +29,7 @@ std::tuple<
   std::vector<std::vector<Vector2>>, 
   std::vector<Pose3>, 
   std::vector<Pose3>, 
-  Cal3_S2> readDataset(std::string filename)
+  Cal3DS2> readDataset(std::string filename)
 {
   YAML::Node root = YAML::LoadFile(filename);
   
@@ -42,7 +43,7 @@ std::tuple<
     imagePointsList.push_back(view["image_points"].as<std::vector<Vector2>>());
   }
   auto objectPoints = root["object_points"].as<std::vector<Vector3>>();
-  auto cameraCalibration = root["camera_calibration"].as<Cal3_S2>();
+  auto cameraCalibration = root["camera_calibration"].as<Cal3DS2>();
 
   return std::tie(objectPoints, imagePointsList, wThList, eToList, cameraCalibration);
 }
@@ -54,7 +55,8 @@ int main(int argc, char *argv[])
   auto imagePointsList = std::get<1>(dataset);
   auto wThList = std::get<2>(dataset);
   auto eToList = std::get<3>(dataset);
-  auto cameraCalibration = boost::make_shared<Cal3_S2>(std::get<4>(dataset));
+  auto cameraCalibration = boost::make_shared<Cal3DS2>(std::get<4>(dataset));
+  std::cout << cameraCalibration->k() << std::endl;
 
   // std::cout << hTe << std::endl;
   // std::cout << wTo << std::endl;
@@ -91,7 +93,7 @@ int main(int argc, char *argv[])
     auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
 
     for (int j = 0; j < imagePoints.size(); j++) {
-      graph.emplace_shared<ResectioningFactor>(
+      graph.emplace_shared<ResectioningFactor<Cal3DS2>>(
         measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
     }
 
@@ -173,7 +175,7 @@ int main(int argc, char *argv[])
       measurementNoise, A(1), B(1), X(poseIndex), wTh);
 
     for (int j = 0; j < imagePoints.size(); j++) {
-      graph.emplace_shared<ResectioningFactor>(
+      graph.emplace_shared<ResectioningFactor<Cal3DS2>>(
         measurementNoise, X(poseIndex), cameraCalibration, imagePoints[j], objectPoints[j]);
     }
 
@@ -182,7 +184,7 @@ int main(int argc, char *argv[])
         1.0, 0.0, 0.0,
         0.0, -1.0, 0.0,
         0.0, 0.0, -1.0),
-      Vector3(-0.1, -0.1, 0.1)));
+      Vector3(-0.5, -0.5, 0.5)));
 
     poseIndex++;
   }

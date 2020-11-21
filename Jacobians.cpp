@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     for (int j = 0; j < imagePoints.size(); j++)
     {
-      auto crf = ResectioningFactor(measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
+      auto crf = ResectioningFactor<Cal3_S2>(measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
 
       // std::cout << imagePoints[j] << std::endl;
       // std::cout << objectPoints[j] << std::endl;
