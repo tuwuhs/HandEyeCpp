@@ -15,6 +15,10 @@ simulatePoseKoide(
   boost::optional<gtsam::Pose3> eTh_ = boost::none,
   boost::optional<gtsam::Pose3> wTo_ = boost::none);
 
+gtsam::Vector3 applyNoise(gtsam::Vector3 p, double stdevTrans);
+
+gtsam::Pose3 applyNoise(gtsam::Pose3 pose, double stdevTrans, double stdevRotDeg);
+
 std::vector<gtsam::Pose3> applyNoise(
   const std::vector<gtsam::Pose3> &poses, double stdevTrans, double stdevRotDeg);
 

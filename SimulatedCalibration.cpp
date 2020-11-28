@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
   //   cout << "X[" << i << "]: " << oTe << endl;
   // }
 
+  /*
   // SFM optimization
   auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
   NonlinearFactorGraph graph;
@@ -98,7 +99,8 @@ int main(int argc, char *argv[])
   LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   result.print("Result: ");
-  
+  */
+
   // Add pose noise
   // wThList = applyNoise(wThList, 0.01, 0.1);
 
@@ -123,43 +125,43 @@ int main(int argc, char *argv[])
   result.print("Result: ");
   */
 
-  /*
-  // Solve Hand-Eye using image points
-  NonlinearFactorGraph graph;
+  
+  // Solve Hand-Eye using SFM
   auto measurementNoise = nullptr;
-
+  NonlinearFactorGraph graph;
   Values initial;
-  auto poseIndex = 1;
+  graph.addPrior(X(0), eToList[0].inverse(), measurementNoise);
+  graph.addPrior(L(0), objectPoints[0], measurementNoise);
+
   for (int i = 0; i < wThList.size(); i++) {
     auto imagePoints = imagePointsList[i];
     auto wTh = wThList[i];
 
     graph.emplace_shared<HandEyePoseFactor>(
-      measurementNoise, A(1), B(1), X(poseIndex), wTh);
+      measurementNoise, A(1), B(1), X(i), wTh);
 
     for (int j = 0; j < imagePoints.size(); j++) {
-      graph.emplace_shared<ResectioningFactor<Cal3_S2>>(
-        measurementNoise, X(poseIndex), cameraCalibration, imagePoints[j], objectPoints[j]);
+      graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2>>(
+        imagePoints[j], measurementNoise, X(i), L(j), cameraCalibration);      
     }
 
-    initial.insert(X(poseIndex), Pose3(
-      Rot3(
-        -1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, -1.0),
-      Vector3(-0.11, -0.11, 0.1)));
+    initial.insert(X(i), applyNoise(eToList[i].inverse(), 0.4, 0.2));
+  }
 
-    poseIndex++;
+  for (int j = 0; j < objectPoints.size(); j++) {
+    initial.insert<Vector3>(L(j), applyNoise(objectPoints[j], 0.2));
   }
 
   initial.insert(A(1), Pose3());
   initial.insert(B(1), Pose3());
+
+  initial.print("Initial estimate:\n");
 
   LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
   result.at(B(1)).print("wTo");
-  */
+  
   return 0;
 }

@@ -86,6 +86,33 @@ std::tuple<std::vector<Pose3>, std::vector<Pose3>, Pose3, Pose3> simulatePoseKoi
   return std::tie(wThList, eToList, hTe, wTo);
 }
 
+Vector3 applyNoise(Vector3 p, double stdevTrans)
+{
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::normal_distribution<double> transDistribution(0.0, stdevTrans);
+  std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
+
+  auto noise = transDistribution(gen) * Unit3(uniform(gen), uniform(gen), uniform(gen));
+
+  return p + noise;
+}
+
+Pose3 applyNoise(Pose3 pose, double stdevTrans, double stdevRotDeg)
+{
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::normal_distribution<double> rotDistribution(0.0, stdevRotDeg * M_PI / 180.0);
+  std::normal_distribution<double> transDistribution(0.0, stdevTrans);
+  std::uniform_real_distribution<double> uniform(-1.0, std::nextafter(1.0, DBL_MAX));
+
+  auto noise = Pose3(Rot3::AxisAngle(
+    Unit3(uniform(gen), uniform(gen), uniform(gen)), rotDistribution(gen)),
+    transDistribution(gen) * Unit3(uniform(gen), uniform(gen), uniform(gen)));
+
+  return noise * pose;
+}
+
 std::vector<Pose3> applyNoise(
   const std::vector<Pose3> &poses, double stdevTrans, double stdevRotDeg)
 {
