@@ -20,13 +20,13 @@ class FixedHandEyePoseFactor : public NoiseModelFactor2<Pose3, Pose3>
 {
   typedef NoiseModelFactor2<Pose3, Pose3> Base;
 
-  Pose3 eTo_;
+  Pose3 oTe_;
   Pose3 wTh_;
 
 public:
   FixedHandEyePoseFactor(const SharedNoiseModel &model, const Key &hTe, const Key &wTo,
-    const Pose3 eTo, const Pose3 wTh)
-    : Base(model, hTe, wTo), eTo_(eTo), wTh_(wTh)
+    const Pose3 oTe, const Pose3 wTh)
+    : Base(model, hTe, wTo), oTe_(oTe), wTh_(wTh)
   {
   }
 
@@ -41,20 +41,19 @@ public:
     Matrix6 H4;
     Matrix6 Hlocal;
 
-    // 1st variant
-    // // auto eTo = hTe.between(wTh_.inverse() * wTo, H1, H2);
-    // auto eTo = hTe.inverse(H1).compose(wTh_.inverse() * wTo, H2, H3);
+    // // 1st variant
+    // auto oTe = wTo.inverse(H1).compose(wTh_ * hTe, H2, H3);
 
-    // auto error = eTo_.localCoordinates(eTo, boost::none, Hlocal);
+    // auto error = oTe_.localCoordinates(oTe, boost::none, Hlocal);
 
     // if (HhTe)
-    //   *HhTe = Hlocal * H2 * H1;
+    //   *HhTe = Hlocal * H3;
 
     // if (HwTo)
-    //   *HwTo = Hlocal * H3;
+    //   *HwTo = Hlocal * H2 * H1;
 
     // 2nd variant
-    auto wTe = wTo.compose(eTo_.inverse(), H1, boost::none);
+    auto wTe = wTo.compose(oTe_, H1, boost::none);
     auto wTh = wTe.compose(hTe.inverse(H2), H3, H4);
 
     auto error = wTh_.localCoordinates(wTh, boost::none, Hlocal);
@@ -84,44 +83,42 @@ class HandEyePoseFactor : public NoiseModelFactor3<Pose3, Pose3, Pose3>
 
 public:
   HandEyePoseFactor(const SharedNoiseModel &model, const Key &hTe, const Key &wTo,
-    const Key &eTo, const Pose3 wTh)
-    : Base(model, hTe, wTo, eTo), wTh_(wTh)
+    const Key &oTe, const Pose3 wTh)
+    : Base(model, hTe, wTo, oTe), wTh_(wTh)
   {
   }
 
-  Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo, const Pose3 &eTo,
+  Vector evaluateError(const Pose3 &hTe, const Pose3 &wTo, const Pose3 &oTe,
     boost::optional<Matrix &> HhTe = boost::none,
     boost::optional<Matrix &> HwTo = boost::none,
-    boost::optional<Matrix &> HeTo = boost::none) const override
+    boost::optional<Matrix &> HoTe = boost::none) const override
   {
     Matrix6 H1;
     Matrix6 H2;
     Matrix6 H3;
     Matrix6 H4;
     Matrix6 H5;
-    Matrix6 H6;
     Matrix6 Hlocal;
     Matrix6 Hlocal1;
 
-    auto wTe = wTo.compose(eTo.inverse(H1), H2, H3);
-    auto wTh = wTe.compose(hTe.inverse(H4), H5, H6);
+    auto wTe = wTo.compose(oTe, H1, H2);
+    auto wTh = wTe.compose(hTe.inverse(H3), H4, H5);
     auto error = wTh_.localCoordinates(wTh, Hlocal1, Hlocal);
 
     if (HhTe)
-      *HhTe = H6 * H4;
+      *HhTe = H5 * H3;
 
     if (HwTo)
-      *HwTo = H5 * H2;
+      *HwTo = H4 * H1;
 
-    if (HeTo)
-      *HeTo = H5 * H3 * H1;
+    if (HoTe)
+      *HoTe = H4 * H2;
 
     // std::cout << H1 << std::endl;
     // std::cout << H2 << std::endl;
     // std::cout << H3 << std::endl;
     // std::cout << H4 << std::endl;
     // std::cout << H5 << std::endl;
-    // std::cout << H6 << std::endl;
     // std::cout << Hlocal1 << std::endl;
     // std::cout << Hlocal << std::endl;
     // std::cout << error << std::endl << std::flush;
