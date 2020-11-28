@@ -31,16 +31,11 @@ public:
   Vector evaluateError(const Pose3 &pose,
     boost::optional<Matrix &> H = boost::none) const override
   {
-    Matrix6 Dinverse;
-    PinholePose<CALIBRATION> camera(pose.inverse(H ? &Dinverse : 0), K_);
+    // pose is oTe
+    PinholePose<CALIBRATION> camera(pose, K_);
 
     Matrix26 Dproject;
-    const auto error = camera.project(P_, H ? &Dproject : 0, boost::none, boost::none) - p_;
-
-    // Chain the Jacobians
-    if (H) {
-      *H = Dproject * Dinverse;
-    }
+    const auto error = camera.project(P_, H, boost::none, boost::none) - p_;
 
     // std::cout << error << std::endl << std::flush;
     return error;

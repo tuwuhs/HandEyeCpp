@@ -54,14 +54,15 @@ int main(int argc, char *argv[])
   //   std::cout << std::endl;
   // }
 
-  cout << "Actual:" << endl;
-  for (int i = 0; i < wThList.size(); i++) {
-    const auto imagePoints = imagePointsList[i];
-    const auto wTh = wThList[i];
-    const auto oTe = eToList[i].inverse();
-    cout << "X[" << i << "]: " << oTe << endl;
-  }
+  // cout << "Actual:" << endl;
+  // for (int i = 0; i < wThList.size(); i++) {
+  //   const auto imagePoints = imagePointsList[i];
+  //   const auto wTh = wThList[i];
+  //   const auto oTe = eToList[i].inverse();
+  //   cout << "X[" << i << "]: " << oTe << endl;
+  // }
 
+  // SFM optimization
   auto measurementNoise = nullptr; //Diagonal::Sigmas(Point2(1.0, 1.0));
   NonlinearFactorGraph graph;
   Values initial;
@@ -75,15 +76,13 @@ int main(int argc, char *argv[])
     const auto imagePoints = imagePointsList[i];
     const auto wTh = wThList[i];
     const auto oTe = eToList[i].inverse();
-    // cout << "Actual: " << eTo << std::endl;
+    // cout << "Actual: " << oTe << std::endl;
 
     auto oTe_corrupted = oTe.compose(Pose3(
-      Rot3::Rodrigues((-1 * (i % 2)) * 0.3, 0.2, 0.25), Point3(0.5, -0.40, 0.60)));
+      Rot3::Rodrigues((-1 * (i % 2)) * 0.3, 0.2, 0.25), Point3(0.50, -0.40, 0.60)));
     initial.insert(X(i), oTe_corrupted);
 
     for (int j = 0; j < imagePoints.size(); j++) {
-      // graph.emplace_shared<ResectioningFactor>(
-      //   measurementNoise, X(1), cameraCalibration, imagePoints[j], objectPoints[j]);
       graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2>>(
         imagePoints[j], measurementNoise, X(i), L(j), cameraCalibration);
     }
@@ -97,39 +96,33 @@ int main(int argc, char *argv[])
   initial.print("Initial estimate:\n");
 
   LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
-  // params.maxIterations = 30;
-  // params.absoluteErrorTol = 0;
-  // params.relativeErrorTol = 1e-6;
-  // params.useFixedLambdaFactor = false;
-  // params.minModelFidelity = 0.1;
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-  // Values result = NonlinearConjugateGradientOptimizer(graph, initial).optimize();
   result.print("Result: ");
-
+  
   // Add pose noise
   // wThList = applyNoise(wThList, 0.01, 0.1);
 
   /*
-    // Solve Hand-Eye using poses
-    NonlinearFactorGraph graph;
-    auto measurementNoise = nullptr;
+  // Solve Hand-Eye using poses
+  NonlinearFactorGraph graph;
+  auto measurementNoise = nullptr;
 
-    for (int i = 0; i < wThList.size(); i++) {
-      auto eTo = eToList[i];
-      auto wTh = wThList[i];
-      graph.emplace_shared<FixedHandEyePoseFactor>(
-        measurementNoise, A(1), B(1), eTo, wTh);
-    }
+  for (int i = 0; i < wThList.size(); i++) {
+    auto oTe = eToList[i].inverse();
+    auto wTh = wThList[i];
+    graph.emplace_shared<FixedHandEyePoseFactor>(
+      measurementNoise, A(1), B(1), oTe, wTh);
+  }
 
-    Values initial;
-    initial.insert(A(1), Pose3());
-    initial.insert(B(1), Pose3());
+  Values initial;
+  initial.insert(A(1), Pose3());
+  initial.insert(B(1), Pose3());
 
-    LevenbergMarquardtParams params;
-    Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-    result.print("Result: ");
+  LevenbergMarquardtParams params;
+  Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+  result.print("Result: ");
   */
- 
+
   /*
   // Solve Hand-Eye using image points
   NonlinearFactorGraph graph;
@@ -154,7 +147,7 @@ int main(int argc, char *argv[])
         -1.0, 0.0, 0.0,
         0.0, 1.0, 0.0,
         0.0, 0.0, -1.0),
-      Vector3(-0.11, -0.11, 0.1)).inverse());
+      Vector3(-0.11, -0.11, 0.1)));
 
     poseIndex++;
   }
