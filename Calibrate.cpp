@@ -67,18 +67,12 @@ int main(int argc, char *argv[])
   //   std::cout << wTh << std::endl;
   // }
 
-  // Project points
-  // const auto objectPoints = createTargetObject(3, 3, 0.25);
-  // const auto cameraCalibration = boost::make_shared<Cal3_S2>(Cal3_S2(300.0, 300.0, 0.0, 320.0, 240.0));
-  // const auto imagePointsList = projectPoints(eToList, objectPoints, cameraCalibration);
-
   // for (auto imagePoints: imagePointsList) {
   //   for (auto imagePoint: imagePoints) {
   //     std::cout << "(" << imagePoint.x() << ", " << imagePoint.y() << ")  ";
   //   }
   //   std::cout << std::endl;
   // }
-
   
   // Try camera resectioning
   for (int i = 0; i < wThList.size(); i++) {
@@ -98,33 +92,12 @@ int main(int argc, char *argv[])
     }
 
     Values initial;
-    // initial.insert(X(1), Pose3(
-    //   Rot3(
-    //     -1.0, 0.0, 0.0,
-    //     0.0, 1.0, 0.0,
-    //     0.0, 0.0, -1.0), 
-    //   Vector3(-0.1, -0.1, 0.1)
-    // ));
     initial.insert(X(1), Pose3(
       Rot3(
         1.0, 0.0, 0.0,
         0.0, -1.0, 0.0,
         0.0, 0.0, -1.0), 
       Vector3(-0.1, -0.1, 0.1)));
-    // initial.insert(X(1), Pose3(
-    //   Rot3(
-    //     -0.788675, -0.211325, 0.57735,
-    //     0.211325, 0.788675, 0.57735,
-    //     -0.57735, 0.57735, -0.57735),
-    //   Vector3(-0, -0.5, 0.5)
-    // ));
-    // initial.insert(X(1), Pose3(
-    //   Rot3(
-    //     -0.788675, 0.211325, -0.57735,
-    //     -0.211325, 0.788675, 0.57735,
-    //     0.57735, 0.57735, -0.57735),
-    //   Vector3(0, 0, 0.866025)
-    // ));
 
     LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
     // params.maxIterations = 30;
@@ -166,27 +139,25 @@ int main(int argc, char *argv[])
   auto measurementNoise = nullptr;
 
   Values initial;
-  auto poseIndex = 1;
   for (int i = 0; i < wThList.size(); i++) {
     auto imagePoints = imagePointsList[i];
     auto wTh = wThList[i];
 
     graph.emplace_shared<HandEyePoseFactor>(
-      measurementNoise, A(1), B(1), X(poseIndex), wTh);
+      measurementNoise, A(1), B(1), X(i), wTh);
 
     for (int j = 0; j < imagePoints.size(); j++) {
       graph.emplace_shared<ResectioningFactor<Cal3DS2>>(
-        measurementNoise, X(poseIndex), cameraCalibration, imagePoints[j], objectPoints[j]);
+        measurementNoise, X(i), cameraCalibration, imagePoints[j], objectPoints[j]);
     }
 
-    initial.insert(X(poseIndex), Pose3(
+    // initial.insert(X(i), eToList[i].inverse());
+    initial.insert(X(i), Pose3(
       Rot3(
         1.0, 0.0, 0.0,
         0.0, -1.0, 0.0,
         0.0, 0.0, -1.0),
-      Vector3(-0.5, -0.5, 0.5)));
-
-    poseIndex++;
+      Vector3(-0.1, -0.1, 0.1)));
   }
 
   initial.insert(A(1), Pose3());
