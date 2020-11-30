@@ -235,7 +235,7 @@ int main(int argc, char* argv[])
     }
   }
   scaleFactor /= count;
-  std::cout << scaleFactor << std::endl;
+  std::cout << "Scale factor: " << scaleFactor << std::endl;
 
   for (auto& view: viewsList) {
     view.pose = Pose3(view.pose.rotation(), scaleFactor * view.pose.translation());
@@ -274,13 +274,38 @@ int main(int argc, char* argv[])
   initial.insert(A(1), Pose3());
   initial.insert(B(1), Pose3());
 
-  initial.print("Initial estimate:\n");
+  // initial.print("Initial estimate:\n");
 
   LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
   result.at(B(1)).print("wTo");
+
+  auto hTe_est = result.at(A(1)).cast<Pose3>();
+  auto wTo_est = result.at(B(1)).cast<Pose3>();
+
+  double rrmse = 0.0;
+  count = 0;
+  for (int i = 0; i < wThList.size(); i++) {
+    auto wTh = wThList[i];
+    auto oTe = wTo_est.inverse() * wTh * hTe_est;
+    
+    auto camera = PinholePose<Cal3DS2>(oTe, calCOLMAP);
+
+    auto view = viewsList[i];
+    for (auto point2D: view.points2D) {
+      auto imagePoint = point2D.p;
+      auto point3D_ID = point2D.point3D_ID;
+      auto point3D = result.at(L(point3D_ID)).cast<Vector3>();
+      auto reprojected = camera.project(point3D);
+      
+      rrmse += (imagePoint - reprojected).squaredNorm();
+      count++;
+    }
+  }
+
+  std::cout << "RRMSE: " << sqrt(rrmse / count) << std::endl;
 
   return 0;
 }
