@@ -7,6 +7,13 @@
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Pose3.h>
 
+std::tuple<
+  std::vector<gtsam::Vector3>, 
+  std::vector<std::vector<gtsam::Vector2>>, 
+  std::vector<gtsam::Pose3>, 
+  std::vector<gtsam::Pose3>, 
+  gtsam::Cal3DS2> readDataset(std::string filename);
+
 namespace YAML
 {
   using namespace gtsam;

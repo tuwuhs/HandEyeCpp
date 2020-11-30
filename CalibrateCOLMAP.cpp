@@ -1,6 +1,19 @@
 
-#include <gtsam/geometry/Cal3DS2.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/PinholePose.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <boost/make_shared.hpp>
+#include <boost/optional/optional_io.hpp>
+
+#include "HandEyeCalibration.h"
+#include "PoseSimulation.h"
+#include "ResectioningFactor.h"
+#include "YamlUtilities.h"
 
 #include <fstream>
 #include <iostream>
@@ -8,6 +21,13 @@
 #include <string>
 #include <sstream>
 #include <vector>
+
+using namespace gtsam;
+using namespace gtsam::noiseModel;
+using symbol_shorthand::A;
+using symbol_shorthand::B;
+using symbol_shorthand::L;
+using symbol_shorthand::X;
 
 using namespace gtsam;
 
@@ -83,8 +103,7 @@ std::map<int, View> loadImages(std::string filename)
   
     view.pose = Pose3(
       Rot3::Quaternion(qw, qx, qy, qz),
-      Vector3(tx, ty, tz)
-    );
+      Vector3(tx, ty, tz)).inverse();
     view.name = name;
     view.camera_ID = camera_ID;
 
@@ -162,33 +181,84 @@ std::vector<View> sortViews(std::map<int, View>& views)
 
 int main(int argc, char* argv[])
 {
+  // Read YAML data
+  auto dataset = readDataset("out.yaml");
+  auto wThList = std::get<2>(dataset);
+  auto cal = boost::make_shared<Cal3DS2>(std::get<4>(dataset));
+  // std::cout << cameraCalibration->k() << std::endl;
+
+  // Read COLMAP data
   auto cameras = loadCameras("cameras.txt");
   auto views = loadImages("images.txt");
   auto points = loadPoints3D("points3D.txt");
+
   auto viewsList = sortViews(views);
+  auto calCOLMAP = boost::make_shared<Cal3DS2>(cameras[1]);
 
-  for (auto camera: cameras) {
-    std::cout << camera.first << std::endl;
-    camera.second.print();
-  }
-  std::cout << std::endl;
+  // for (auto camera: cameras) {
+  //   std::cout << camera.first << std::endl;
+  //   camera.second.print();
+  // }
+  // std::cout << std::endl;
 
-  for (auto view: views) {
-    auto v = view.second;
-    std::cout << view.first << " " << v.name << " " << v.camera_ID << std::endl;
-    v.pose.print();
+  // for (auto view: views) {
+  //   auto v = view.second;
+  //   std::cout << view.first << " " << v.name << " " << v.camera_ID << std::endl;
+  //   v.pose.print();
     
-    for (auto point2D: v.points2D) {
-      std::cout << "- " << point2D.point3D_ID << " " << point2D.p.x() << " " << point2D.p.y() << std::endl;
-    }
-  }
-  std::cout << std::endl;
+  //   for (auto point2D: v.points2D) {
+  //     std::cout << "- " << point2D.point3D_ID << " " << point2D.p.x() << " " << point2D.p.y() << std::endl;
+  //   }
+  // }
+  // std::cout << std::endl;
 
-  for (auto point: points) {
-    auto p = point.second;
-    std::cout << point.first << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
+  // for (auto point: points) {
+  //   auto p = point.second;
+  //   std::cout << point.first << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
+  // }
+  // std::cout << std::endl;
+
+  // Solve Hand-Eye using SFM
+  auto measurementNoise = nullptr;
+  NonlinearFactorGraph graph;
+  Values initial;
+  graph.addPrior(X(0), viewsList[0].pose, measurementNoise);
+  graph.addPrior(L(944), points[944], measurementNoise);
+
+  for (int i = 0; i < wThList.size(); i++) {
+    auto wTh = wThList[i];
+    graph.emplace_shared<HandEyePoseFactor>(
+      measurementNoise, A(1), B(1), X(i), wTh);
+    
+    auto view = viewsList[i];
+    for (auto point2D: view.points2D) {
+      auto imagePoint = point2D.p;
+      graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3DS2>>(
+        imagePoint, measurementNoise, X(i), L(point2D.point3D_ID), calCOLMAP);
+    }
+
+    initial.insert(X(i), view.pose);
   }
-  std::cout << std::endl;
+
+  for (auto point3D: points) {
+    initial.insert<Vector3>(L(point3D.first), point3D.second);
+  }
+
+  initial.insert(A(1), Pose3());
+  initial.insert(B(1), Pose3());
+
+  initial.print("Initial estimate:\n");
+
+  LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
+  Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
+  // result.print("Result: ");
+  result.at(A(1)).print("hTe");
+  result.at(B(1)).print("wTo");
+
+  initial.at(X(0)).print();
+  result.at(X(0)).print();
+  initial.at(X(10)).print();
+  result.at(X(10)).print();
 
   return 0;
 }

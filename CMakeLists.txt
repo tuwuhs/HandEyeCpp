@@ -35,11 +35,11 @@ target_link_libraries(Jacobians PUBLIC gtsam)
 add_executable(HelloYaml HelloYaml.cpp)
 target_link_libraries(HelloYaml PUBLIC yaml-cpp gtsam)
 
-add_executable(Calibrate Calibrate.cpp)
+add_executable(Calibrate Calibrate.cpp YamlUtilities.cpp)
 target_link_libraries(Calibrate PUBLIC yaml-cpp gtsam)
 
-add_executable(CalibrateCOLMAP CalibrateCOLMAP.cpp)
-target_link_libraries(CalibrateCOLMAP PUBLIC gtsam)
+add_executable(CalibrateCOLMAP CalibrateCOLMAP.cpp YamlUtilities.cpp)
+target_link_libraries(CalibrateCOLMAP PUBLIC yaml-cpp gtsam)
 
 ##############################################################################
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
