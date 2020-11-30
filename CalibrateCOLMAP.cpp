@@ -219,12 +219,38 @@ int main(int argc, char* argv[])
   // }
   // std::cout << std::endl;
 
+  // Cheat: find the scale factor by comparing relative transforms of the
+  // camera poses from SfM result and the camera resectioning result.
+  // Average the scaling factor.
+  double scaleFactor = 0.0;
+  int count = 0;
+  for (int i = 0; i < eToList.size(); i++) {
+    for (int j = i + 1; j < eToList.size(); j++) {
+      auto rel = eToList[i] * eToList[j].inverse();
+      auto relCOLMAP = viewsList[i].pose.inverse() * viewsList[j].pose;
+      scaleFactor += rel.x() / relCOLMAP.x();
+      scaleFactor += rel.y() / relCOLMAP.y();
+      scaleFactor += rel.z() / relCOLMAP.z();
+      count += 3;
+    }
+  }
+  scaleFactor /= count;
+  std::cout << scaleFactor << std::endl;
+
+  for (auto& view: viewsList) {
+    view.pose = Pose3(view.pose.rotation(), scaleFactor * view.pose.translation());
+  }
+
+  for (auto& point: points) {
+    point.second = scaleFactor * point.second;
+  }
+
   // Solve Hand-Eye using SFM
   auto measurementNoise = nullptr;
   NonlinearFactorGraph graph;
   Values initial;
   graph.addPrior(X(0), views.begin()->second.pose, measurementNoise);
-  graph.addPrior(L(points.begin()->first), points.begin()->second, measurementNoise);
+  // graph.addPrior(L(points.begin()->first), points.begin()->second, measurementNoise);
 
   for (int i = 0; i < wThList.size(); i++) {
     auto wTh = wThList[i];
@@ -250,7 +276,7 @@ int main(int argc, char* argv[])
 
   initial.print("Initial estimate:\n");
 
-  LevenbergMarquardtParams params; // = LevenbergMarquardtParams::CeresDefaults();
+  LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
   Values result = LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
