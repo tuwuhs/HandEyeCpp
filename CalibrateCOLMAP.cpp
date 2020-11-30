@@ -184,6 +184,7 @@ int main(int argc, char* argv[])
   // Read YAML data
   auto dataset = readDataset("out.yaml");
   auto wThList = std::get<2>(dataset);
+  auto eToList = std::get<3>(dataset);
   auto cal = boost::make_shared<Cal3DS2>(std::get<4>(dataset));
   // std::cout << cameraCalibration->k() << std::endl;
 
@@ -222,8 +223,8 @@ int main(int argc, char* argv[])
   auto measurementNoise = nullptr;
   NonlinearFactorGraph graph;
   Values initial;
-  graph.addPrior(X(0), viewsList[0].pose, measurementNoise);
-  graph.addPrior(L(944), points[944], measurementNoise);
+  graph.addPrior(X(0), views.begin()->second.pose, measurementNoise);
+  graph.addPrior(L(points.begin()->first), points.begin()->second, measurementNoise);
 
   for (int i = 0; i < wThList.size(); i++) {
     auto wTh = wThList[i];
@@ -254,11 +255,6 @@ int main(int argc, char* argv[])
   // result.print("Result: ");
   result.at(A(1)).print("hTe");
   result.at(B(1)).print("wTo");
-
-  initial.at(X(0)).print();
-  result.at(X(0)).print();
-  initial.at(X(10)).print();
-  result.at(X(10)).print();
 
   return 0;
 }
