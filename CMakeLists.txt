@@ -38,6 +38,9 @@ target_link_libraries(HelloYaml PUBLIC yaml-cpp gtsam)
 add_executable(Calibrate Calibrate.cpp)
 target_link_libraries(Calibrate PUBLIC yaml-cpp gtsam)
 
+add_executable(CalibrateCOLMAP CalibrateCOLMAP.cpp)
+target_link_libraries(CalibrateCOLMAP PUBLIC gtsam)
+
 ##############################################################################
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
